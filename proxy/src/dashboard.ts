@@ -253,6 +253,55 @@ export function createDashboardHandler(): (req: http.IncomingMessage, res: http.
       return;
     }
 
+    // Fetch models available on a provider
+    if (url.pathname === '/api/provider-models' && method === 'POST') {
+      let body = '';
+      req.on('data', (c) => body += c);
+      req.on('end', async () => {
+        try {
+          const { provider, apiKey } = JSON.parse(body);
+
+          const defaults: Record<string, { baseUrl: string; envKey: string }> = {
+            nvidia:    { baseUrl: 'https://integrate.api.nvidia.com/v1',         envKey: 'NVIDIA_API_KEY' },
+            openrouter:{ baseUrl: 'https://openrouter.ai/api/v1',                envKey: 'OPENROUTER_API_KEY' },
+            openai:    { baseUrl: 'https://api.openai.com/v1',                   envKey: 'OPENAI_API_KEY' },
+            groq:      { baseUrl: 'https://api.groq.com/openai/v1',             envKey: 'GROQ_API_KEY' },
+            anthropic: { baseUrl: 'https://api.anthropic.com/v1',                envKey: 'ANTHROPIC_API_KEY' },
+            google:    { baseUrl: 'https://generativelanguage.googleapis.com',    envKey: 'GOOGLE_API_KEY' },
+            ollama:    { baseUrl: 'http://localhost:11434',                      envKey: '' },
+            vllm:      { baseUrl: 'http://localhost:8000',                       envKey: '' },
+            lmstudio:  { baseUrl: 'http://localhost:1234',                       envKey: '' },
+          };
+
+          const def = defaults[provider as string];
+          if (!def) { jsonResp(res, { error: 'Unknown provider' }, 400); return; }
+
+          const key = apiKey || (def.envKey ? (process.env[def.envKey] || '') : '');
+          let models: string[] = [];
+
+          if (provider === 'google') {
+            const u = `${def.baseUrl}/v1/models?key=${encodeURIComponent(key)}`;
+            const r = await fetch(u);
+            const d = await r.json();
+            models = (d.models || []).map((m: any) => m.name.replace(/^models\//, ''));
+          } else {
+            const h: Record<string, string> = {};
+            if (provider === 'anthropic') { h['x-api-key'] = key; h['anthropic-version'] = '2023-06-01'; }
+            else if (key) h['Authorization'] = `Bearer ${key}`;
+            const url = provider === 'ollama' ? `${def.baseUrl}/api/tags` : `${def.baseUrl}/models`;
+            const r = await fetch(url, { headers: h });
+            const d = await r.json();
+            if (provider === 'ollama') models = (d.models || []).map((m: any) => m.name);
+            else models = (d.data || []).map((m: any) => m.id);
+          }
+
+          models.sort();
+          jsonResp(res, { models });
+        } catch (e: any) { jsonResp(res, { error: e.message }, 500); }
+      });
+      return;
+    }
+
     if (url.pathname === '/api/requests' && method === 'GET') {
       jsonResp(res, requestStore.getAll());
       return;
