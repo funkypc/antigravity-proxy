@@ -55,6 +55,8 @@ function createConfig() {
     nvidiaBaseUrl: process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1',
     openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
     openrouterBaseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+    opencodeBaseUrl: process.env.OPENCODE_BASE_URL || 'https://opencode.ai/zen/go/v1',
+    opencodeApiKey: process.env.OPENCODE_API_KEY || '',
     proxyPort: parseInt(process.env.PROXY_PORT || '443', 10),
     apiPort: parseInt(process.env.API_PORT || '4040', 10),
     logLevel: process.env.LOG_LEVEL || 'info',
@@ -99,6 +101,8 @@ function createConfig() {
       this.nvidiaBaseUrl = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
       this.openrouterApiKey = process.env.OPENROUTER_API_KEY || '';
       this.openrouterBaseUrl = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+      this.opencodeBaseUrl = process.env.OPENCODE_BASE_URL || 'https://opencode.ai/zen/go/v1';
+      this.opencodeApiKey = process.env.OPENCODE_API_KEY || '';
       this.proxyPort = parseInt(process.env.PROXY_PORT || '443', 10);
       this.apiPort = parseInt(process.env.API_PORT || '4040', 10);
       this.logLevel = process.env.LOG_LEVEL || 'info';

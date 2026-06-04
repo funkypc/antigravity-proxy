@@ -25,6 +25,7 @@ export const DEFAULT_PROVIDER_CONFIGS: Record<ProviderId, { baseUrl: string; ada
   ollama:    { baseUrl: 'http://localhost:11434',                      adapterType: 'openai',    envKey: '' },
   vllm:      { baseUrl: 'http://localhost:8000',                       adapterType: 'openai',    envKey: '' },
   lmstudio:  { baseUrl: 'http://localhost:1234',                       adapterType: 'openai',    envKey: '' },
+  opencode:  { baseUrl: 'https://opencode.ai/zen/go/v1',              adapterType: 'opencode',  envKey: 'OPENCODE_API_KEY' },
 };
 
 export function createAdapter(cfg: ProviderConfig): ModelAdapter {
@@ -38,5 +39,7 @@ export function createAdapter(cfg: ProviderConfig): ModelAdapter {
       return new AnthropicAdapter(baseUrl, apiKey);
     case 'google':
       return new GoogleAdapter(baseUrl, apiKey);
+    case 'opencode':
+      return new OpenCodeAdapter(baseUrl, apiKey);
   }
 }

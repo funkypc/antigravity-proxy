@@ -417,10 +417,47 @@ export function createDashboardHandler(): (req: http.IncomingMessage, res: http.
       req.on('data', (c) => body += c);
       req.on('end', async () => {
         try {
-          const { provider, apiKey, force } = JSON.parse(body);
-          if (!provider) { jsonResp(res, { error: 'provider required' }, 400); return; }
-          const result = await fetchProviderModels(provider, apiKey, !!force);
-          jsonResp(res, result);
+          const { provider, apiKey } = JSON.parse(body);
+
+          const defaults: Record<string, { baseUrl: string; envKey: string }> = {
+            nvidia:    { baseUrl: 'https://integrate.api.nvidia.com/v1',         envKey: 'NVIDIA_API_KEY' },
+            openrouter:{ baseUrl: 'https://openrouter.ai/api/v1',                envKey: 'OPENROUTER_API_KEY' },
+            openai:    { baseUrl: 'https://api.openai.com/v1',                   envKey: 'OPENAI_API_KEY' },
+            groq:      { baseUrl: 'https://api.groq.com/openai/v1',             envKey: 'GROQ_API_KEY' },
+            anthropic: { baseUrl: 'https://api.anthropic.com/v1',                envKey: 'ANTHROPIC_API_KEY' },
+            google:    { baseUrl: 'https://generativelanguage.googleapis.com',    envKey: 'GOOGLE_API_KEY' },
+            ollama:    { baseUrl: 'http://localhost:11434',                      envKey: '' },
+            vllm:      { baseUrl: 'http://localhost:8000',                       envKey: '' },
+            lmstudio:  { baseUrl: 'http://localhost:1234',                       envKey: '' },
+            opencode:  { baseUrl: 'https://opencode.ai/zen/go/v1',              envKey: 'OPENCODE_API_KEY' },
+          };
+
+          const def = defaults[provider as string];
+          if (!def) { jsonResp(res, { error: 'Unknown provider' }, 400); return; }
+
+          const key = apiKey || (def.envKey ? (process.env[def.envKey] || '') : '');
+          let models: string[] = [];
+
+          if (provider === 'opencode') {
+            models = ['glm-5.1', 'glm-5', 'kimi-k2.6', 'kimi-k2.5', 'deepseek-v4-pro', 'deepseek-v4-flash', 'mimo-v2.5', 'mimo-v2.5-pro', 'minimax-m3', 'minimax-m2.7', 'minimax-m2.5', 'qwen3.7-max', 'qwen3.7-plus', 'qwen3.6-plus'];
+          } else if (provider === 'google') {
+            const u = `${def.baseUrl}/v1/models?key=${encodeURIComponent(key)}`;
+            const r = await poolFetch(u);
+            const d = await r.json();
+            models = (d.models || []).map((m: any) => m.name.replace(/^models\//, ''));
+          } else {
+            const h: Record<string, string> = {};
+            if (provider === 'anthropic') { h['x-api-key'] = key; h['anthropic-version'] = '2023-06-01'; }
+            else if (key) h['Authorization'] = `Bearer ${key}`;
+            const url = provider === 'ollama' ? `${def.baseUrl}/api/tags` : `${def.baseUrl}/models`;
+            const r = await poolFetch(url, { headers: h });
+            const d = await r.json();
+            if (provider === 'ollama') models = (d.models || []).map((m: any) => m.name);
+            else models = (d.data || []).map((m: any) => m.id);
+          }
+
+          models.sort();
+          jsonResp(res, { models });
         } catch (e: any) { jsonResp(res, { error: e.message }, 500); }
       });
       return;

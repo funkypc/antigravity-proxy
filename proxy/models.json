@@ -1,61 +1,21 @@
 {
   "_provider_models": {
     "default": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "claude-sonnet-4-6": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "claude-sonnet-4-6-thinking": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "claude-opus-4-6": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "claude-opus-4-6-thinking": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.5-flash": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.5-flash-low": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.5-flash-medium": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.5-flash-high": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3-flash-agent": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.1-flash-lite": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.1-flash": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.1-pro": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.1-pro-low": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-3.1-pro-high": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gemini-pro-agent": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
-    },
-    "gpt-oss-120b": {
-      "google": "gemma-4-31b-it"
-    },
-    "gpt-oss-120b-medium": {
-      "google": "gemma-4-31b-it"
-    },
-    "gemini-2.5-flash": {
-      "nvidia": "stepfun-ai/step-3.7-flash"
+      "opencode": "glm-5.1"
     }
-  }
+  },
+  "glm-5.1": "glm-5.1",
+  "glm-5": "glm-5",
+  "kimi-k2.6": "kimi-k2.6",
+  "kimi-k2.5": "kimi-k2.5",
+  "deepseek-v4-pro": "deepseek-v4-pro",
+  "deepseek-v4-flash": "deepseek-v4-flash",
+  "mimo-v2.5": "mimo-v2.5",
+  "mimo-v2.5-pro": "mimo-v2.5-pro",
+  "minimax-m3": "minimax-m3",
+  "minimax-m2.7": "minimax-m2.7",
+  "minimax-m2.5": "minimax-m2.5",
+  "qwen3.7-max": "qwen3.7-max",
+  "qwen3.7-plus": "qwen3.7-plus",
+  "qwen3.6-plus": "qwen3.6-plus"
 }
