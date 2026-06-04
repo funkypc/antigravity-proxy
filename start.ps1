@@ -3,7 +3,7 @@
   Antigravity Proxy - Launcher.
 .DESCRIPTION
   Checks prerequisites, installs deps, generates certs, starts the proxy.
-  All configuration (providers, API keys, models, pricing) is done from the dashboard at http://localhost:4000
+  All configuration (providers, API keys, models, pricing) is done from the dashboard at http://localhost:4040
 #>
 
 $ErrorActionPreference = 'Stop'
@@ -85,7 +85,7 @@ if (-not $alreadyTrusted) {
 }
 
 # -- Kill old proxy -----------------------------------------------------------
-$oldPid = (netstat -ano | Select-String ':4000 ' | ForEach-Object { ($_ -split '\s+')[-1] }) | Where-Object { $_ -ne '0' } | Select-Object -First 1
+$oldPid = (netstat -ano | Select-String ':4040 ' | ForEach-Object { ($_ -split '\s+')[-1] }) | Where-Object { $_ -ne '0' } | Select-Object -First 1
 if ($oldPid) {
   Write-Step "Stopping old proxy (PID $oldPid)"
   taskkill /F /PID $oldPid 2>$null
@@ -130,9 +130,9 @@ if ($antigravityPath) {
 
 # -- Summary ------------------------------------------------------------------
 Write-Step "Ready!"
-Write-Info "  Dashboard: http://localhost:4000"
-Write-Info "  Proxy:     https://localhost:443 (TLS)"
-Write-Info "  Logs:      $logFile"
+Write-Info "  Dashboard:   http://localhost:4040"
+Write-Info "  Proxy:       https://localhost:443 (TLS)"
+Write-Info "  Logs:        $logFile"
 Write-Info ""
 Write-Info "  Configure providers, API keys, models, and pricing from the dashboard."
 Write-Info "  Press Ctrl+C in the proxy window to stop."

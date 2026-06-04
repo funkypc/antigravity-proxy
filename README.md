@@ -75,7 +75,7 @@ The proxy intercepts Antigravity's Google Gemini API calls and translates them t
 │                 │ ◀──────────────── │              │   │              │  OpenAI           │
 └─────────────────┘                   └──────┬───────┘   │              │  Groq             │
                                               │           │              │  Anthropic        │
-                                         HTTP (4000)      │              │  Google           │
+                                         HTTP (4040)      │              │  Google           │
                                               │           │              │  Ollama / vLLM    │
                                      ┌────────┘           │              │  LM Studio        │
                                      │  Dashboard (SPA)   │              └──────────────────┘
@@ -93,7 +93,7 @@ The proxy:
 3. Routes the request through the **failover router**: iterates providers in priority order, with retry + exponential backoff
 4. Resolves the model name per-provider (flat map or `_provider_models` override)
 5. Translates to the target provider's API format and streams the response back
-6. Serves a real-time dashboard on port 4000 with live logs, config editor, model mapping, and provider priority management
+6. Serves a real-time dashboard on port 4040 with live logs, config editor, model mapping, and provider priority management
 
 ## Requirements
 
@@ -143,7 +143,7 @@ antigravity/
 
 ## Dashboard
 
-Once the proxy is running, open **http://localhost:4000** in your browser:
+Once the proxy is running, open **http://localhost:4040** in your browser:
 
 - **Dashboard** — live stats (requests, tokens, tool calls, errors), provider info, environment overview
 - **Requests** — searchable request history with expandable detail view and pagination

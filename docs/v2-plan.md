@@ -46,7 +46,7 @@ Antigravity Desktop
        │
        ▼
   ┌──────────────┐     ┌─────────────┐
-  │  port 4000   │     │  port 443   │
+  │  port 4040   │     │  port 443   │
   │  Dashboard   │     │  Proxy TLS  │
   └──────┬───────┘     └──────┬──────┘
          │                    │

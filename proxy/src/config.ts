@@ -56,7 +56,7 @@ function createConfig() {
     openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
     openrouterBaseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
     proxyPort: parseInt(process.env.PROXY_PORT || '443', 10),
-    apiPort: parseInt(process.env.API_PORT || '4000', 10),
+    apiPort: parseInt(process.env.API_PORT || '4040', 10),
     logLevel: process.env.LOG_LEVEL || 'info',
     retries: parseInt(process.env.PROXY_RETRIES || '10', 10),
     backoffMs: parseInt(process.env.PROXY_BACKOFF_MS || '1000', 10),
@@ -100,7 +100,7 @@ function createConfig() {
       this.openrouterApiKey = process.env.OPENROUTER_API_KEY || '';
       this.openrouterBaseUrl = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
       this.proxyPort = parseInt(process.env.PROXY_PORT || '443', 10);
-      this.apiPort = parseInt(process.env.API_PORT || '4000', 10);
+      this.apiPort = parseInt(process.env.API_PORT || '4040', 10);
       this.logLevel = process.env.LOG_LEVEL || 'info';
       this.retries = parseInt(process.env.PROXY_RETRIES || '10', 10);
       this.backoffMs = parseInt(process.env.PROXY_BACKOFF_MS || '1000', 10);

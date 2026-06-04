@@ -18,7 +18,7 @@ GOOGLE_API_KEY=AIza...
 
 # Proxy ports
 PROXY_PORT=443
-API_PORT=4000
+API_PORT=4040
 
 # Retry & failover
 PROXY_RETRIES=10
@@ -37,7 +37,7 @@ LOG_LEVEL=info
 | `{PROVIDER}_API_KEY` | API key per provider (e.g. `NVIDIA_API_KEY`) | — |
 | `{PROVIDER}_BASE_URL` | Optional base URL override per provider | See adapter defaults |
 | `PROXY_PORT` | HTTPS intercept port | `443` |
-| `API_PORT` | HTTP REST forward port | `4000` |
+| `API_PORT` | HTTP REST forward port | `4040` |
 | `PROXY_RETRIES` | Max retry attempts per provider before failover | `10` |
 | `PROXY_BACKOFF_MS` | Initial backoff in ms (doubles each retry) | `1000` |
 | `LOG_LEVEL` | Log verbosity | `info` |

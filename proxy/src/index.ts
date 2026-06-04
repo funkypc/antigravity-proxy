@@ -46,11 +46,11 @@ async function resolveBackend(hostname: string): Promise<string> {
   return ip;
 }
 
-// Dashboard handler for port 4000
+// Dashboard handler for port 4040
 const dashboardHandler = createDashboardHandler();
 
-// Shared handler for port 4000: dashboard paths or Google forward
-function port4000Handler(req: http.IncomingMessage, res: http.ServerResponse): void {
+// Shared handler for port 4040: dashboard paths or Google forward
+function port4040Handler(req: http.IncomingMessage, res: http.ServerResponse): void {
   const pathname = req.url || '/';
   if (pathname === '/' || pathname.startsWith('/api/')) {
     dashboardHandler(req, res);
@@ -596,9 +596,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // HTTP server on port 4000 (dashboard + language_server init calls)
-  const restServer = http.createServer(port4000Handler);
-  restServer.on('error', (err) => logger.error('Port 4000 server error', { error: err.message }));
+  // HTTP server on port 4040 (dashboard + language_server init calls)
+  const restServer = http.createServer(port4040Handler);
+  restServer.on('error', (err) => logger.error('Port 4040 server error', { error: err.message }));
   restServer.listen(config.apiPort, '0.0.0.0', () => {
     logger.info(`Port ${config.apiPort} (HTTP) → Dashboard + init calls`);
     logger.info(`Dashboard: http://localhost:${config.apiPort}`);
