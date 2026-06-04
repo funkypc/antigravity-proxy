@@ -57,7 +57,7 @@ function port4040Handler(req: http.IncomingMessage, res: http.ServerResponse): v
     return;
   }
   const hostname = 'cloudcode-pa.googleapis.com';
-  logger.debug('REST forward', { method: req.method, path: pathname });
+  logger.info('REST forward', { method: req.method, path: pathname });
   const proxyReq = https.request(
     { hostname: backendIp, port: 443, path: pathname, method: req.method, servername: hostname, rejectUnauthorized: true, headers: { ...req.headers, host: hostname } },
     (proxyRes) => { res.writeHead(proxyRes.statusCode || 200, proxyRes.headers); proxyRes.pipe(res); },
@@ -515,7 +515,7 @@ async function forwardToGoogle(
   const hostname = host?.toLowerCase().includes('daily-cloudcode')
     ? 'daily-cloudcode-pa.googleapis.com' : 'cloudcode-pa.googleapis.com';
 
-  logger.debug(`  FWD ${method} ${url} → ${hostname}`, { host });
+  logger.info(`  FWD ${method} ${url} → ${hostname}`, { host });
 
   const h1Headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(req.headers)) {
@@ -545,7 +545,7 @@ async function handleTlsRequest(req: http2.Http2ServerRequest, res: http2.Http2S
   const url = req.url || '/';
   const method = req.method || 'GET';
 
-  logger.debug(`>>> ${method} ${url}`);
+  logger.info(`>>> ${method} ${url}`);
 
   try {
     // Collect body for POST

@@ -98,10 +98,13 @@ Write-Step "Starting proxy"
 $logDir = Join-Path $ProxyDir 'logs'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 $logFile = Join-Path $logDir "proxy_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
-$logArgs = @("-NoExit", "-Command", "cd '$ProxyDir'; tsx src/index.ts 2>&1 | Tee-Object -FilePath '$logFile'")
+$logArgs = @("-NoExit", "-Command", "cd '$ProxyDir'; npx tsx src/index.ts 2>&1 | Tee-Object -FilePath '$logFile'")
+
+$showWindow = Read-Host "  Show proxy window? (Y/n)"
+$windowStyle = if ($showWindow -ne 'n' -and $showWindow -ne 'N') { 'Normal' } else { 'Hidden' }
 
 try {
-  $proc = Start-Process powershell -Verb RunAs -WindowStyle Normal -ArgumentList $logArgs -PassThru
+  $proc = Start-Process powershell -Verb RunAs -WindowStyle $windowStyle -ArgumentList $logArgs -PassThru
   Write-Ok "Proxy starting (PID $($proc.Id)) - log: $logFile"
 } catch {
   Write-Err "Failed to start proxy: $_"
@@ -109,6 +112,49 @@ try {
 }
 
 Start-Sleep -Seconds 3
+
+# -- Reset language server connections ----------------------------------------
+Write-Step "Resetting language server connections"
+ipconfig /flushdns | Out-Null
+Write-Ok "DNS cache flushed"
+
+$lsProcs = Get-Process -Name "language_server_windows_x64" -ErrorAction SilentlyContinue
+if ($lsProcs) {
+  $conns = @()
+  foreach ($ls in $lsProcs) {
+    $c = Get-NetTCPConnection -OwningProcess $ls.Id -RemotePort 443 -ErrorAction SilentlyContinue
+    if ($c) { $conns += $c }
+  }
+  if ($conns.Count -gt 0) {
+    Write-Info "  Found $($conns.Count) active connection(s) to Google"
+    $choice = Read-Host "  Toggle network adapter to force reconnect? (Y/n)"
+    if ($choice -ne 'n' -and $choice -ne 'N') {
+      Write-Info "  Briefly toggling network adapter (all network will pause ~5s)..."
+      $adapter = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.HardwareInterface } | Select-Object -First 1
+      if ($adapter) {
+        try {
+          Disable-NetAdapter -Name $adapter.Name -Confirm:$false | Out-Null
+          Start-Sleep -Seconds 2
+          Enable-NetAdapter -Name $adapter.Name -Confirm:$false | Out-Null
+          Write-Ok "Network adapter '$($adapter.Name)' toggled - stale connections dropped"
+          Start-Sleep -Seconds 3
+        } catch {
+          Write-Warn "Could not toggle adapter: $_"
+          Write-Info "  Disconnecting and reconnecting your network will have the same effect"
+        }
+      } else {
+        Write-Warn "No suitable network adapter found"
+        Write-Info "  Manually disable/enable your network adapter, or wait ~3 minutes for connections to expire"
+      }
+    } else {
+      Write-Info "  Skipped. Wait ~3 minutes for connections to expire, or toggle your network adapter manually."
+    }
+  } else {
+    Write-Ok "No active language server connections to Google"
+  }
+} else {
+  Write-Ok "No language server running"
+}
 
 # -- Launch Antigravity -------------------------------------------------------
 Write-Step "Launching Antigravity"
@@ -135,4 +181,4 @@ Write-Info "  Proxy:       https://localhost:443 (TLS)"
 Write-Info "  Logs:        $logFile"
 Write-Info ""
 Write-Info "  Configure providers, API keys, models, and pricing from the dashboard."
-Write-Info "  Press Ctrl+C in the proxy window to stop."
+Write-Info "  Run stop.ps1 to stop the proxy and revert all changes."
