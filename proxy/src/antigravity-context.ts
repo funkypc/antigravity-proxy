@@ -21,20 +21,20 @@ export const ANTIGRAVITY_CONTEXT = {
 
 The following tools have required parameters that non-Gemini models frequently omit, causing retry loops. Know these before calling them.
 
-### manage_task — REQUIRED: action
+### manage_task — Manage background process tasks
 \`\`\`
 manage_task(
-  action: "complete" | "update" | "create" | "delete" | "get",  ← REQUIRED
-  TaskId: string,                                                 ← REQUIRED
-  Summary?: string,    // for action="complete"
-  Progress?: number,   // for action="update" (0-100)
-  Status?: string,     // for action="update": "in_progress"|"blocked"|"pending"
-  Title?: string,      // for action="create"
-  Description?: string
+  Action: "list" | "kill" | "kill_all" | "status" | "send_input",  ← REQUIRED
+  TaskId?: string,    // required for "kill", "status", "send_input"
+  Input?: string       // for "send_input" — stdin to send to the running task
 )
 \`\`\`
-If manage_task returns "I need to specify the action parameter", you omitted action.
-DO NOT retry without adding action. Fix: add action="complete" (or the correct action).
+- Action "list" → list all active background tasks
+- Action "status" → check a specific task's status and log URI
+- Action "kill" → terminate a specific task
+- Action "kill_all" → terminate all tasks
+- Action "send_input" → send stdin input to a running task
+Do NOT call manage_task for project task tracking. Use write_to_file with IsArtifact=true for that.
 
 ### run_command — Shell is PowerShell on Windows
 \`\`\`
@@ -86,7 +86,7 @@ browser_action(
 
 | Error message | Root cause | Fix |
 |---|---|---|
-| "I need to specify the action parameter" | manage_task missing action | Add action="complete" |
+| "Action must be one of: list, kill, kill_all, status, send_input" | manage_task wrong/missing Action | Set Action correctly |
 | PowerShell && error | Wrong shell syntax | Replace && with ; |
 | "Overwrite is false" | write_to_file without Overwrite:true | Set Overwrite: true |
 | Same tool error twice | You are in a retry loop | STOP — change the approach |
@@ -96,14 +96,22 @@ browser_action(
 - list_dir → explore directories (NEVER run_command dir/ls)
 - view_file → read files (NEVER run_command cat/type)
 - grep_search → search code (NEVER run_command grep/findstr)
-- find_files → find by name pattern
 - replace_file_content → edit sections of existing files
 - write_to_file → create new files or full rewrites
 - run_command → execute scripts, tests, builds, git
-- manage_task → task lifecycle (ALWAYS include action parameter)
+- manage_task → background task management (use Action param)
 - invoke_subagent → spawn parallel specialist agents
+- define_subagent → register a new subagent type
+- manage_subagents → list/kill subagents
+- send_message → communicate with subagents
 - search_web → internet search
+- read_url_content → fetch URL content
 - browser_action → browser automation
+- start_browser_session → launch browser
+- ask_permission → request file/command permissions
+- ask_question → ask user multiple-choice questions
+- generate_image → generate images
+- schedule → set timers or cron jobs
 
 ## Workspace Context Reference
 
