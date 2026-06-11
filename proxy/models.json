@@ -1,16 +1,16 @@
 {
   "_provider_models": {
     "claude-opus-4-6": {
-      "zen": "minimax-m3-free"
+      "zen": "mimo-v2.5-free"
     },
     "claude-opus-4-6-thinking": {
-      "zen": "minimax-m3-free"
+      "zen": "mimo-v2.5-free"
     },
     "claude-sonnet-4-6": {
-      "zen": "minimax-m3-free"
+      "zen": "mimo-v2.5-free"
     },
     "claude-sonnet-4-6-thinking": {
-      "zen": "minimax-m3-free"
+      "zen": "mimo-v2.5-free"
     },
     "gemini-2.5-flash": {
       "zen": "deepseek-v4-flash-free"

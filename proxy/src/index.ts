@@ -42,6 +42,29 @@ function readAgentContextReference(): string {
   return getWorkspaceContextEnvelope(AGENT_CONTEXT_PATH);
 }
 
+/**
+ * Reads the full agent-context.md file and wraps it with the workspace context
+ * envelope. This provides the model with the complete operating manual while
+ * preventing path/prose extraction as authoritative runtime state.
+ * The file is read once per request because it may change between requests,
+ * but the content is cached in memory to avoid repeated disk I/O within
+ * the same request processing cycle.
+ */
+let _agentContextContent: string | null = null;
+function readAgentContextFull(): string | null {
+  try {
+    if (fs.existsSync(AGENT_CONTEXT_PATH)) {
+      if (_agentContextContent === null) {
+        _agentContextContent = fs.readFileSync(AGENT_CONTEXT_PATH, 'utf-8');
+      }
+      return wrapToolResultForContextFile(AGENT_CONTEXT_PATH, _agentContextContent);
+    }
+  } catch {
+    // Fall through to null
+  }
+  return null;
+}
+
 async function resolveBackend(hostname: string): Promise<string> {
   if (process.env.GOOGLE_BACKEND_IP) return process.env.GOOGLE_BACKEND_IP;
   const { Resolver } = await import('dns/promises');
@@ -127,12 +150,26 @@ function stripInlineContext(contents: Content[]): Content[] {
       }
     }
   }
-  // Inject agent-context.md reference as first system-level instruction
-  const adapterRef = {
-    role: 'user' as const,
-    parts: [{ text: readAgentContextReference() }],
-  };
-  filtered.unshift(adapterRef);
+  // Inject agent-context.md content with envelope protection as the first
+  // system-level instruction. This gives the model the complete operating
+  // manual (tool schemas, decision tree, spawning guidelines, verification
+  // requirements) without needing an extra view_file round-trip.
+  // The envelope wrapping prevents path/prose extraction as state.
+  const fullContent = readAgentContextFull();
+  if (fullContent) {
+    const adapterRef = {
+      role: 'user' as const,
+      parts: [{ text: fullContent }],
+    };
+    filtered.unshift(adapterRef);
+  } else {
+    // Fallback: inject the envelope reference only
+    const adapterRef = {
+      role: 'user' as const,
+      parts: [{ text: readAgentContextReference() }],
+    };
+    filtered.unshift(adapterRef);
+  }
   return filtered;
 }
 

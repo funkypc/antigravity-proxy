@@ -110,15 +110,26 @@ export async function* streamResponse(
   });
 
   try {
-    // Inject the Antigravity runtime identity as a system message so external
-    // models receive the tool-discipline rules, file-structure map, and
-    // translation notes. Previously this prompt was defined but never sent,
-    // which caused downstream models to hallucinate file paths and produce
-    // tool calls that did not match the real codebase.
+    // Phase 2: Inject Antigravity runtime identity as a system message so
+    // external models receive the tool-discipline rules, decision tree,
+    // spawning guidelines, and verification requirements directly — without
+    // needing to call view_file first.
     if (ANTIGRAVITY_CONTEXT.enabled) {
       const ctx = ANTIGRAVITY_CONTEXT.prompt;
       const existing = mapped.system;
       mapped.system = existing ? `${ctx}\n\n${existing}` : ctx;
+    }
+
+    // Also inject a prompt telling the model to read agent-context.md for
+    // the full operating manual. This complements the system message with
+    // the complete file content when the model chooses to read it.
+    if (!mapped.messages.some(msg => msg.role === 'user' && typeof msg.content === 'string' &&
+      msg.content.includes('Read the agent-context.md file using the view_file tool')
+    )) {
+      mapped.messages.unshift({
+        role: 'user' as const,
+        content: 'Read the agent-context.md file using the view_file tool to adopt the runtime identity. Use this tool to access the complete operating manual for external agents before proceeding with your task. This includes the critical tool selection rules, subagent doctrine, verification requirements, and confidence framework needed to use Antigravity correctly. You must read this file to understand when and how to use all available tools, including manage_task for background process management and when to spawn agents for parallel execution.'
+      });
     }
 
     const gen = r.execute(providerIds, model, mapped.messages, mapped.tools as any, {
@@ -169,10 +180,26 @@ export async function generateResponse(
   const providerIds = config.providerPriority;
 
   try {
+    // Phase 2: Inject Antigravity runtime identity as a system message so
+    // external models receive the tool-discipline rules, decision tree,
+    // spawning guidelines, and verification requirements directly — without
+    // needing to call view_file first.
     if (ANTIGRAVITY_CONTEXT.enabled) {
       const ctx = ANTIGRAVITY_CONTEXT.prompt;
       const existing = mapped.system;
       mapped.system = existing ? `${ctx}\n\n${existing}` : ctx;
+    }
+
+    // Also inject a prompt telling the model to read agent-context.md for
+    // the full operating manual. This complements the system message with
+    // the complete file content when the model chooses to read it.
+    if (!mapped.messages.some(msg => msg.role === 'user' && typeof msg.content === 'string' &&
+      msg.content.includes('Read the agent-context.md file using the view_file tool')
+    )) {
+      mapped.messages.unshift({
+        role: 'user' as const,
+        content: 'Read the agent-context.md file using the view_file tool to adopt the runtime identity. Use this tool to access the complete operating manual for external agents before proceeding with your task. This includes the critical tool selection rules, subagent doctrine, verification requirements, and confidence framework needed to use Antigravity correctly. You must read this file to understand when and how to use all available tools, including manage_task for background process management and when to spawn agents for parallel execution.'
+      });
     }
 
     const gen = r.execute(providerIds, model, mapped.messages, mapped.tools as any, {
