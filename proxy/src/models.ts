@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { detectModelCapabilities } from './model-capabilities.js';
+import type { ModelCapabilities } from './model-capabilities.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MODELS_PATH = path.resolve(__dirname, '..', 'models.json');
@@ -114,6 +116,25 @@ export class ModelResolver {
 
   getProviderMap(): ProviderModelMap {
     return JSON.parse(JSON.stringify(this.providerMap));
+  }
+
+  /**
+   * Detect capabilities for a model by its name.
+   * Uses pattern matching on the resolved model name.
+   */
+  getCapabilities(modelOrResolved: string): ModelCapabilities {
+    return detectModelCapabilities(modelOrResolved);
+  }
+
+  /**
+   * Resolve a model name and then detect its capabilities.
+   */
+  resolveWithCapabilities(model: string, providerId?: string): { resolvedModel: string; capabilities: ModelCapabilities } {
+    const resolvedModel = this.resolve(model, providerId);
+    return {
+      resolvedModel,
+      capabilities: detectModelCapabilities(resolvedModel),
+    };
   }
 }
 
