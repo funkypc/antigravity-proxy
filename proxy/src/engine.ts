@@ -107,8 +107,8 @@ function normalizeToolArgs(args: Record<string, unknown>, toolName: string): Rec
 }
 
 export type StreamResponseChunk =
-  | { type: 'text'; content: string; provider?: string; resolvedModel?: string }
-  | { type: 'thought'; content: string; provider?: string; resolvedModel?: string }
+  | { type: 'text'; content: string; provider?: string; resolvedModel?: string; sessionId?: string }
+  | { type: 'thought'; content: string; provider?: string; resolvedModel?: string; sessionId?: string }
   | { type: 'tool-call'; name: string; args: Record<string, unknown>; provider?: string; resolvedModel?: string }
   | { type: 'attempt'; provider: string; resolvedModel: string; attempt: number; status: string; fallback?: boolean };
 
@@ -185,10 +185,11 @@ export async function* streamResponse(
     for await (const chunk of gen) {
       const prov = (chunk as any).provider;
       const rmodel = (chunk as any).resolvedModel;
+      const sid = (chunk as any).sessionId as string | undefined;
       if (chunk.type === 'text') {
-        yield { type: 'text', content: chunk.content || '', provider: prov, resolvedModel: rmodel };
+        yield { type: 'text', content: chunk.content || '', provider: prov, resolvedModel: rmodel, sessionId: sid };
       } else if (chunk.type === 'thought') {
-        yield { type: 'thought', content: chunk.content || '', provider: prov, resolvedModel: rmodel };
+        yield { type: 'thought', content: chunk.content || '', provider: prov, resolvedModel: rmodel, sessionId: sid };
       } else if (chunk.type === 'tool-call') {
         const toolName = chunk.name || 'unknown';
         yield { type: 'tool-call', name: toolName, args: normalizeToolArgs(chunk.args || {}, toolName), provider: prov, resolvedModel: rmodel };

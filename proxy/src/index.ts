@@ -20,6 +20,7 @@ import { checkBlocked } from './blocklist.js';
 import { scanLocalProviders } from './local-discovery.js';
 import { installAgentContext } from './install-context.js';
 import { getWorkspaceContextEnvelope, wrapToolResultForContextFile, isWorkspaceContextFile } from './workspace-context.js';
+import { getSessionId, setSessionId } from './session-store.js';
 import type { Content, Tool, GenerationConfig } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -410,6 +411,14 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
   const convId = extractConvId(request.requestId);
   injectReasoning(mapped.messages, convId);
 
+  // Inject stored session_id for OpenCode Go context cache discounts
+  const storedSessionId = getSessionId(convId);
+  if (storedSessionId) {
+    if (!mapped.providerOptions) mapped.providerOptions = {};
+    (mapped.providerOptions as any).sessionId = storedSessionId;
+    logger.info(`  Session cache hit: ${storedSessionId.substring(0, 12)}...`);
+  }
+
   logger.info(`  Provider priority: ${config.providerPriority.join(', ')}`);
 
   const responseId = genGoogleId();
@@ -455,6 +464,7 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
     let usedProvider = '';
     let usedModel = '';
     const failoverEvents: any[] = [];
+    let capturedSessionId: string | undefined = storedSessionId;
 
     for await (const chunk of generator) {
       // If client disconnected mid-stream, stop iterating
@@ -474,6 +484,11 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
         if (resolvedCheck.blocked) {
           throw new Error(`Request blocked: ${resolvedCheck.reason}`);
         }
+      }
+      // Capture session_id from OpenCode Go streaming response for cache reuse
+      const sid = (chunk as any).sessionId;
+      if (sid && !capturedSessionId) {
+        capturedSessionId = sid;
       }
       if (ctype === 'text') {
         const c = (chunk as any).content as string || '';
@@ -518,6 +533,12 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
 
     // Save reasoning_content for this conversation so it can be injected on the next request
     if (thoughtText) saveReasoning(convId, thoughtText);
+
+    // Store session_id from OpenCode Go response for context cache on next turn
+    if (capturedSessionId && capturedSessionId !== storedSessionId) {
+      setSessionId(convId, capturedSessionId);
+      logger.info(`  Session cached: ${capturedSessionId.substring(0, 12)}...`);
+    }
 
     // Send final event with finishReason and metadata (no text — already streamed incrementally)
     const finalParts: any[] = [];

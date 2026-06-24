@@ -5,6 +5,7 @@
  * - Handles OpenCode Go-specific model routing
  * - OpenCode Go-specific API headers and URL formatting
  * - Handles reasoning field extraction for routed models
+ * - Captures and re-sends session_id for context cache discounts
  */
 
 import { OpenAICompatAdapter } from './openai.js';
@@ -16,11 +17,6 @@ export class OpencodeGoAdapter extends OpenAICompatAdapter {
     super(provider, baseUrl, apiKey);
   }
 
-  /**
-   * Override buildRequest to include OpenCode Go specific parameters:
-   * - Reasoning effort via provider-specific parameter name
-   * - Proper model name handling for the gateway
-   */
   protected buildRequest(
     model: string,
     messages: OpenAIMessage[],
@@ -33,6 +29,12 @@ export class OpencodeGoAdapter extends OpenAICompatAdapter {
       stream: true,
     };
 
+    // Inject session_id for context cache discounts on follow-up requests
+    const sessionId = (config as any)?.providerOptions?.sessionId;
+    if (sessionId) {
+      body.session_id = sessionId;
+    }
+
     if (tools && Object.keys(tools).length > 0) {
       body.tools = Object.entries(tools).map(([name, tool]: [string, any]) => ({
         type: 'function',
@@ -44,8 +46,7 @@ export class OpencodeGoAdapter extends OpenAICompatAdapter {
     if (config?.topP != null) body.top_p = config.topP;
     if ((config as any)?.stopSequences?.length) body.stop = (config as any).stopSequences;
 
-    // Reasoning effort: check explicit providerOptions first, then per-model config.
-    // OpenCode Go gateway forwards reasoning_effort to the underlying model.
+    // Reasoning effort
     const explicitEffort = (config as any)?.providerOptions?.openai?.reasoningEffort;
     const perModelEffort = getEffortForModel(model);
     const effort = explicitEffort || (perModelEffort && perModelEffort !== 'default' ? perModelEffort : null);

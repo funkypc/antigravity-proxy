@@ -94,6 +94,7 @@ export class OpenAICompatAdapter implements ModelAdapter {
     const toolCallBuffers = new Map<number, { id?: string; name?: string; arguments: string }>();
     let thinkBuffer = '';
     let inThinkTag = false;
+    let capturedSessionId: string | undefined;
 
     function* processContent(text: string): Generator<StreamChunk> {
       // Universal <think> tag parsing for any model
@@ -101,7 +102,7 @@ export class OpenAICompatAdapter implements ModelAdapter {
         const endIdx = text.indexOf('</think>');
         if (endIdx >= 0) {
           thinkBuffer += text.slice(0, endIdx);
-          yield { type: 'thought', content: thinkBuffer };
+          yield { type: 'thought', content: thinkBuffer, sessionId: capturedSessionId };
           thinkBuffer = '';
           inThinkTag = false;
           const after = text.slice(endIdx + 8);
@@ -113,12 +114,12 @@ export class OpenAICompatAdapter implements ModelAdapter {
       }
       const startIdx = text.indexOf('<think>');
       if (startIdx >= 0) {
-        if (startIdx > 0) yield { type: 'text', content: text.slice(0, startIdx) };
+        if (startIdx > 0) yield { type: 'text', content: text.slice(0, startIdx), sessionId: capturedSessionId };
         inThinkTag = true;
         const rest = text.slice(startIdx + 7);
         const endIdx = rest.indexOf('</think>');
         if (endIdx >= 0) {
-          yield { type: 'thought', content: rest.slice(0, endIdx) };
+          yield { type: 'thought', content: rest.slice(0, endIdx), sessionId: capturedSessionId };
           inThinkTag = false;
           const after = rest.slice(endIdx + 8);
           if (after) yield* processContent(after);
@@ -144,19 +145,23 @@ export class OpenAICompatAdapter implements ModelAdapter {
           if (data === '[DONE]') return;
           let chunk: any;
           try { chunk = JSON.parse(data); } catch { continue; }
+          // Capture session_id from OpenCode Go response (may appear on any chunk)
+          if (chunk.session_id && !capturedSessionId) {
+            capturedSessionId = chunk.session_id;
+          }
           const choice = chunk.choices?.[0];
           if (!choice) continue;
           const delta = choice.delta || {};
           // Universal reasoning extraction: check delta-level fields first
           const deltaReason = extractReasoning(delta);
           if (deltaReason) {
-            yield { type: 'thought', content: deltaReason };
+            yield { type: 'thought', content: deltaReason, sessionId: capturedSessionId };
           }
           // Some providers put reasoning at the choice level (not inside delta)
           if (!deltaReason) {
             const choiceReason = extractReasoning(choice);
             if (choiceReason) {
-              yield { type: 'thought', content: choiceReason };
+              yield { type: 'thought', content: choiceReason, sessionId: capturedSessionId };
             }
           }
           if (delta.content) {
@@ -182,7 +187,7 @@ export class OpenAICompatAdapter implements ModelAdapter {
       }
       // Flush any remaining think buffer on stream end
       if (thinkBuffer) {
-        yield { type: 'thought', content: thinkBuffer };
+        yield { type: 'thought', content: thinkBuffer, sessionId: capturedSessionId };
         thinkBuffer = '';
       }
       if (toolCallBuffers.size > 0) {
