@@ -23,6 +23,7 @@ import { getWorkspaceContextEnvelope, wrapToolResultForContextFile, isWorkspaceC
 import { getSessionId, setSessionId } from './session-store.js';
 import { safeWrite } from './utils/safe-write.js';
 import { formatErrorResponse } from './utils/error-response.js';
+import { injectContext } from './context-injector.js';
 import type { Content, Tool, GenerationConfig } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -400,7 +401,10 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
     mapped.tools = mappedTools;
   }
 
-  // Calculate actual tokens being sent to provider (post-stripping)
+  // Inject context BEFORE counting tokens so dashboard shows actual usage
+  injectContext(mapped, config.contextStripMode);
+
+  // Calculate actual tokens being sent to provider (post-stripping + post-injection)
   const actualPromptText = JSON.stringify({ system: mapped.system, messages: mapped.messages, tools: mapped.tools });
   const actualPromptTokens = estTokens(actualPromptText);
 

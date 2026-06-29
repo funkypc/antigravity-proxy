@@ -166,9 +166,6 @@ export async function* streamResponse(
     // Sync per-request tools into the capability registry for normalization
     toolCapabilityRegistry.setDynamicTools(mapped.tools);
 
-    // Inject Antigravity context and system message
-    injectContext(mapped, config.contextStripMode);
-
     const gen = r.execute(providerIds, model, mapped.messages, mapped.tools as any, {
       maxTokens: mapped.maxTokens,
       temperature: mapped.temperature,
@@ -219,9 +216,6 @@ export async function generateResponse(
   const providerIds = config.providerPriority;
 
   try {
-    // Inject Antigravity context and system message
-    injectContext(mapped, config.contextStripMode);
-
     const gen = r.execute(providerIds, model, mapped.messages, mapped.tools as any, {
       maxTokens: mapped.maxTokens,
       temperature: mapped.temperature,

@@ -121,6 +121,17 @@ Confidence < 60%  → Ask user for clarification
 | `invoke_subagent` | `Subagents` (array with `TypeName`, `Role`, `Prompt`) | Spawning for simple tasks | Only for complex/parallel tasks |
 | `manage_subagents` | `Action` ("list"\|"kill"\|"kill_all") | Not checking status before killing | Always start with `Action="list"` |
 
+### Browser Tools
+
+| Tool | Required Parameters | Common Mistake | Correct Usage |
+|------|-------------------|----------------|---------------|
+| `start_browser_session` | `url` (optional) | Navigating without starting session | `start_browser_session(url="https://...")` first |
+| `browser_action` | `action`, `url`, `selector`, `text` | Using `read_url_content` for visual | Start session first, then `browser_action(action="navigate", url="...")` |
+| `read_url_content` | `Url` | Using browser for simple reads | `read_url_content(Url="https://...")` for text-only |
+| `search_web` | `query` | Using `run_command curl` | `search_web(query="topic", domain="site.com")` |
+
+Browser actions: `navigate`, `click`, `type`, `screenshot`, `scroll`, `wait`, `close`, `get_html`, `get_text`
+
 ---
 
 ## Subagent Doctrine

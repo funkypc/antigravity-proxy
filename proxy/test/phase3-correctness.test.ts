@@ -280,20 +280,20 @@ test('Phase 3 / A6: router.ts has a clarifying comment on the second-pass fallba
 });
 
 // ---------------------------------------------------------------------------
-// CONTEXT_STRIP_MODE passthrough: engine.ts should skip injection in passthrough
+// CONTEXT_STRIP_MODE passthrough: index.ts should skip injection in passthrough
 // ---------------------------------------------------------------------------
 
-test('Passthrough: engine.ts uses injectContext which handles passthrough mode', () => {
-  const engine = src('engine.ts');
-  // engine.ts should import and use injectContext from context-injector.ts
+test('Passthrough: index.ts uses injectContext which handles passthrough mode', () => {
+  const index = src('index.ts');
+  // index.ts should import and use injectContext from context-injector.ts
   assert.ok(
-    /import.*injectContext.*from.*context-injector/.test(engine),
-    'engine.ts should import injectContext from context-injector.ts',
+    /import.*injectContext.*from.*context-injector/.test(index),
+    'index.ts should import injectContext from context-injector.ts',
   );
-  // engine.ts should call injectContext with contextStripMode
+  // index.ts should call injectContext with contextStripMode
   assert.ok(
-    /injectContext\(mapped,\s*config\.contextStripMode\)/.test(engine),
-    'engine.ts should call injectContext with contextStripMode',
+    /injectContext\(mapped,\s*config\.contextStripMode\)/.test(index),
+    'index.ts should call injectContext with contextStripMode',
   );
 });
 
@@ -311,13 +311,13 @@ test('Passthrough: context-injector.ts handles passthrough mode correctly', () =
   );
 });
 
-test('Passthrough: engine.ts generateResponse also uses injectContext', () => {
+test('Passthrough: engine.ts does NOT call injectContext (moved to index.ts)', () => {
   const engine = src('engine.ts');
-  // Both streamResponse and generateResponse should use injectContext
+  // injectContext should NOT be called in engine.ts anymore
   const matches = engine.match(/injectContext\(mapped,\s*config\.contextStripMode\)/g);
   assert.ok(
-    matches && matches.length >= 2,
-    `engine.ts should call injectContext in both streamResponse and generateResponse (found ${matches?.length ?? 0})`,
+    !matches || matches.length === 0,
+    `engine.ts should not call injectContext (found ${matches?.length ?? 0})`,
   );
 });
 
