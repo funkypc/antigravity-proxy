@@ -19,7 +19,9 @@ desktop.ini
 
 # ── OpenCode / Antigravity internals ─────────────────────────────────────────
 .opencode
+.mimocode
 *.asar
+*.tgz
 language_server.exe
 language_server
 webm_encoder.exe

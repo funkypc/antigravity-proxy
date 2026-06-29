@@ -6,6 +6,34 @@ Dates are UTC. Commit hashes are the actual merge commits on `main`.
 
 ---
 
+## [1.0.2] — 2026-06-29
+
+### Added
+
+- **Dashboard redesign** — complete visual overhaul of the dashboard UI:
+  - Ultra-dark theme (`#050507` base) with ambient glow effects and glass morphism surfaces
+  - New `dashboard.css` design system (1300+ lines) extracted from inline styles
+  - Inter font, custom scrollbar, micro-interactions, responsive grids
+  - Antigravity logo on login page (replaces generic star SVG)
+  - Custom dropdown arrows for all native `<select>` elements
+- **Sidebar improvements** — full-width nav items (edge-to-edge), bigger icons (20px), cleaner collapsed state (52px)
+- **Dropdown visibility** — all dropdown menus, selects, and inputs now have opaque dark backgrounds (`#1a1a20` / `#111115`) instead of transparent surfaces, making them readable on the dark theme
+- **Static file serving** — dashboard assets (CSS, JS, images) served without authentication required
+
+### Fixed
+
+- **Dashboard CSS not loading** — `port4000Handler` in `index.ts` was not routing `.css`/`.js`/`.json` requests to the dashboard handler, forwarding them to Google's backend instead (returned HTML → MIME type error)
+- **npm package missing README** — `proxy/README.md` now included in package files so the npm registry shows documentation
+- **Duplicate select appearance** — removed conflicting `.model-card-field select` CSS that overwrote the custom dropdown arrow
+- **Inline transparent backgrounds** — all `<input>`, `<select>`, `<textarea>` elements in `index.html` updated from transparent `var(--surface2)` to opaque `#1a1a20`
+
+### Changed
+
+- **Version bumped to 1.0.2**
+- **Sidebar collapsed width** — increased from 44px to 52px for better icon visibility
+
+---
+
 ## [latest] — 2026-06-24
 
 ### Added

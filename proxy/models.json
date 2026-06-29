@@ -23,8 +23,7 @@
       "zen": "mimo-v2.5-free"
     },
     "claude-opus-4-6-thinking": {
-      "opencode-go": "qwen-3.7-max",
-      "nvidia": "stepfun-ai/step-3.7-flash"
+      "zen": "mimo-v2.5-free"
     },
     "gpt-oss-120b-medium": {
       "zen": "mimo-v2.5-free"

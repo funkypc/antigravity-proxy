@@ -5,545 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Antigravity Proxy</title>
 <link rel="icon" href="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png">
-<style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-
-:root {
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --surface2: #1a1a26;
-  --surface3: #22223a;
-  --border: rgba(124, 58, 237, 0.08);
-  --border2: rgba(255,255,255,0.06);
-  --text: #f1f5f9;
-  --text2: #94a3b8;
-  --text3: #64748b;
-  --accent: #7c3aed;
-  --accent2: #a855f7;
-  --accentDim: rgba(124,58,237,0.12);
-  --green: #22c55e;
-  --greenDim: rgba(34,197,94,0.12);
-  --yellow: #eab308;
-  --yellowDim: rgba(234,179,8,0.12);
-  --red: #ef4444;
-  --redDim: rgba(239,68,68,0.12);
-  --blue: #3b82f6;
-  --radius: 12px;
-  --radiusSm: 8px;
-  --font: -apple-system,'SF Pro','Inter','Segoe UI',sans-serif;
-  --mono: 'SF Mono','Cascadia Code','Fira Code','Consolas',monospace;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadowLg: 0 4px 20px rgba(0,0,0,0.4);
-  --transition: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;display:flex;height:100vh;overflow:hidden;}
-
-/* Scrollbar */
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--text3);border-radius:2px}
-::-webkit-scrollbar-thumb:hover{background:var(--text2)}
-
-/* Sidebar */
-.sidebar{
-  width:240px;background:var(--surface);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;flex-shrink:0;position:relative;
-}
-.sidebar::after{
-  content:'';position:absolute;top:0;right:-1px;width:1px;
-  background:linear-gradient(to bottom, transparent, var(--accentDim), transparent);
-}
-.sidebar-header{
-  padding:20px 20px 16px;display:flex;align-items:center;gap:12px;
-  border-bottom:1px solid var(--border2);
-}
-.sidebar-header .logo-img{border-radius:10px;flex-shrink:0;object-fit:contain;background:transparent;}
-.sidebar-header .logo{
-  width:32px;height:32px;border-radius:10px;
-  background:linear-gradient(135deg, var(--accent), var(--accent2));
-  display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:14px;color:#fff;flex-shrink:0;
-}
-.sidebar-header .brand h1{font-size:14px;font-weight:600;letter-spacing:-0.01em}
-.sidebar-header .brand span{font-size:11px;color:var(--text3);display:block;margin-top:1px}
-
-.nav{padding:12px;flex:1;display:flex;flex-direction:column;gap:2px}
-.nav-item{
-  display:flex;align-items:center;gap:10px;padding:10px 12px;
-  border-radius:var(--radiusSm);cursor:pointer;color:var(--text2);
-  transition:all var(--transition);position:relative;overflow:hidden;
-  font-size:13px;font-weight:450;
-}
-.nav-item:hover{background:var(--surface2);color:var(--text);}
-.nav-item.active{background:var(--accentDim);color:var(--accent2);}
-.nav-item.active::before{
-  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
-  width:3px;height:18px;border-radius:0 2px 2px 0;
-  background:var(--accent);transition:all var(--transition);
-}
-.nav-item .icon{width:18px;height:18px;flex-shrink:0;opacity:0.7;}
-.nav-item.active .icon{opacity:1;}
-.nav-item .badge{
-  margin-left:auto;background:var(--accentDim);color:var(--accent2);
-  font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;
-}
-
-.sidebar-footer{
-display:flex;align-items:center;gap:10px;
-}
-
-/* Collapsed sidebar */
-.sidebar.collapsed{width:56px;}
-.sidebar.collapsed .sidebar-header .brand,
-.sidebar.collapsed .sidebar-footer .footer-info,
-.sidebar.collapsed .nav-item span,
-.sidebar.collapsed .nav-item .badge,
-.sidebar.collapsed .sidebar-toggle span{display:none;}
-.sidebar.collapsed .nav-item{padding:10px;justify-content:center;}
-.sidebar.collapsed .sidebar-header{padding:14px;justify-content:center;}
-.sidebar.collapsed .sidebar-footer{padding:10px;justify-content:center;}
-.sidebar.collapsed .sidebar-toggle{padding:8px;justify-content:center;}
-.sidebar-toggle{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:var(--text3);font-size:11px;border-top:1px solid var(--border2);transition:color 0.15s;}
-.sidebar-toggle:hover{color:var(--text);}
-.sidebar-toggle svg{width:16px;height:16px;flex-shrink:0;}
-.proxy-status-indicator{
-  width:8px;height:8px;border-radius:50%;flex-shrink:0;position:relative;
-}
-.proxy-status-indicator.online{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.4);}
-.proxy-status-indicator.online::after{
-  content:'';position:absolute;inset:-2px;border-radius:50%;
-  border:1px solid rgba(34,197,94,0.3);animation:pulse 2s infinite;
-}
-.proxy-status-indicator.offline{background:var(--text3);}
-@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(1.8);opacity:0}}
-.footer-info{flex:1;min-width:0}
-.footer-info .p-status{font-size:12px;font-weight:500}
-.footer-info .p-provider{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
-
-/* Main */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-
-/* Topbar */
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 32px;border-bottom:1px solid var(--border2);
-  background:var(--surface);flex-shrink:0;min-height:60px;
-}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.topbar h2{font-size:16px;font-weight:600;letter-spacing:-0.01em}
-.topbar .subtitle{font-size:12px;color:var(--text3);display:none}
-.topbar-actions{display:flex;gap:8px}
-
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:7px 14px;border-radius:var(--radiusSm);
-  border:1px solid var(--border2);background:var(--surface2);
-  color:var(--text2);font-size:13px;font-family:var(--font);font-weight:450;
-  cursor:pointer;transition:all var(--transition);white-space:nowrap;
-}
-.btn:hover{background:var(--surface3);color:var(--text);border-color:rgba(255,255,255,0.1);}
-.btn:active{transform:scale(0.97)}
-.btn svg{width:14px;height:14px;opacity:0.7}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
-.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);color:#fff;}
-.btn-ghost{border-color:transparent;background:transparent;}
-.btn-ghost:hover{background:var(--surface2);border-color:transparent;}
-.btn-danger{background:var(--redDim);color:var(--red);border-color:transparent;}
-.btn-danger:hover{background:var(--red);color:#fff;}
-.btn-sm{padding:5px 10px;font-size:12px;}
-.btn-icon{padding:6px;border-radius:var(--radiusSm);}
-.btn-icon svg{width:16px;height:16px;}
-
-/* Content area */
-.content{flex:1;overflow-y:auto;padding:28px 32px;}
-.section{display:none;animation:fadeSlide 300ms ease;}
-.section.active{display:block;}
-@keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-/* Stat Cards - Bento grid */
-.stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-bottom:32px}
-.stat-card{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:20px;position:relative;overflow:hidden;transition:all var(--transition);
-}
-.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadowLg);border-color:rgba(255,255,255,0.08);}
-.stat-card .icon-wrap{
-  width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
-  margin-bottom:14px;font-size:18px;
-}
-.stat-card .icon-wrap.purple{background:var(--accentDim);color:var(--accent2);}
-.stat-card .icon-wrap.green{background:var(--greenDim);color:var(--green);}
-.stat-card .icon-wrap.yellow{background:var(--yellowDim);color:var(--yellow);}
-.stat-card .icon-wrap.red{background:var(--redDim);color:var(--red);}
-.stat-card .s-label{font-size:12px;color:var(--text3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;}
-.stat-card .s-value{font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;}
-.stat-card .s-sub{font-size:12px;color:var(--text3);margin-top:4px;}
-.stat-card .trend{font-size:12px;font-weight:500;margin-left:8px;}
-
-/* Config cards */
-.config-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
-.info-card{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:20px;transition:all var(--transition);
-}
-.info-card:hover{border-color:rgba(255,255,255,0.08);}
-.info-card .ic-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
-.info-card .ic-value{font-size:15px;font-weight:600;}
-.info-card .ic-sub{font-size:12px;color:var(--text3);margin-top:4px;word-break:break-all;}
-
-/* Env table */
-.env-section{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:20px;margin-bottom:16px;
-}
-.env-section h3{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;}
-
-/* Tables */
-.table-wrap{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);overflow:auto;}
-table{width:100%;border-collapse:collapse;}
-thead{background:var(--surface2);}
-th{
-  text-align:left;padding:10px 14px;font-size:11px;color:var(--text3);
-  font-weight:600;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;
-}
-td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border2);vertical-align:middle;}
-tbody tr{transition:background var(--transition);}
-tbody tr:hover{background:var(--surface2);}
-.td-wrap{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
-.tag{
-  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;
-  font-size:11px;font-weight:500;
-}
-.tag-text{background:var(--accentDim);color:var(--accent2);}
-.tag-tool{background:var(--yellowDim);color:var(--yellow);}
-.tag-error{background:var(--redDim);color:var(--red);}
-.tag-incoming{background:var(--accentDim);color:var(--accent2);}
-.tag-outgoing{background:var(--greenDim);color:var(--green);}
-.tag-both{background:rgba(59,130,246,0.12);color:var(--blue);}
-
-/* Forms */
-.form-section{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:24px;margin-bottom:16px;
-}
-.form-section h3{
-  font-size:13px;font-weight:600;margin-bottom:20px;color:var(--text);
-  display:flex;align-items:center;gap:8px;
-}
-.form-group{margin-bottom:18px;}
-.form-group:last-child{margin-bottom:0;}
-.form-group label{
-  display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;
-}
-.form-group .hint{font-size:11px;color:var(--text3);margin-top:3px;}
-.form-group input,.form-group select{
-  width:100%;padding:9px 12px;border-radius:var(--radiusSm);
-  border:1px solid var(--border2);background:var(--surface2);
-  color:var(--text);font-size:13px;font-family:var(--font);
-  outline:none;transition:all var(--transition);
-}
-.form-group input:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.form-group input::placeholder{color:var(--text3);}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-
-/* Model editor */
-.model-input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--mono);outline:none;transition:all var(--transition);}
-.model-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.model-editor{margin-bottom:12px;}
-.model-row{display:grid;grid-template-columns:1fr 1fr 36px;gap:8px;margin-bottom:8px;align-items:center;}
-.model-row input{
-  padding:7px 10px;border-radius:6px;border:1px solid var(--border2);
-  background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--mono);
-  outline:none;transition:all var(--transition);
-}
-.model-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.model-row .btn-icon{
-  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-  border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text3);
-  cursor:pointer;transition:all var(--transition);
-}
-.model-row .btn-icon:hover{background:var(--redDim);color:var(--red);border-color:var(--redDim);}
-
-/* Mode Toggle */
-.mode-toggle{display:inline-flex;background:var(--surface2);border-radius:8px;border:1px solid var(--border2);padding:3px;gap:2px;}
-.mode-toggle-btn{padding:8px 18px;border-radius:6px;border:none;background:transparent;color:var(--text3);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:var(--font);}
-.mode-toggle-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(124,58,237,0.3);}
-.mode-toggle-btn:hover:not(.active){color:var(--text);background:var(--surface3);}
-
-/* Priority Chain */
-.priority-chain{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;margin-top:12px;}
-.priority-provider{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface3);font-size:12px;font-weight:500;color:var(--text);cursor:grab;user-select:none;transition:all 0.15s;}
-.priority-provider:hover{border-color:var(--accent);background:var(--accentDim);}
-.priority-arrow{color:var(--text3);font-size:14px;}
-
-/* Model Cards Grid */
-.model-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;margin-top:20px;}
-.model-card{
-  background:linear-gradient(145deg,var(--surface) 0%,var(--surface2) 100%);
-  border:1px solid var(--border2);border-radius:16px;overflow:visible;
-  transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
-  box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-.model-card:hover{
-  border-color:rgba(124,58,237,0.3);
-  box-shadow:0 8px 32px rgba(0,0,0,0.2),0 0 0 1px rgba(124,58,237,0.1);
-  transform:translateY(-2px);
-}
-.model-card-header{
-  display:flex;align-items:center;gap:12px;padding:16px 18px;
-  border-bottom:1px solid var(--border2);
-  background:linear-gradient(135deg,var(--surface2) 0%,rgba(124,58,237,0.03) 100%);
-}
-.model-card-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
-.model-card-name{font-size:15px;font-weight:700;color:var(--text);flex:1;letter-spacing:-0.01em;}
-.model-card-badge{
-  font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
-  padding:4px 10px;border-radius:6px;
-  background:var(--accentDim);color:var(--accent2);
-  border:1px solid rgba(124,58,237,0.15);
-}
-.model-card-body{padding:18px;}
-.model-card-field{margin-bottom:16px;}
-.model-card-field:last-child{margin-bottom:0;}
-.model-card-field label{
-  display:flex;align-items:center;gap:6px;
-  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
-  color:var(--text3);margin-bottom:8px;
-}
-.model-card-field select,.model-card-field input{
-  width:100%;padding:10px 14px;border-radius:8px;
-  border:1px solid var(--border2);background:var(--surface);
-  color:var(--text);font-size:13px;font-family:var(--mono);
-  outline:none;transition:all 0.2s;
-}
-.model-card-field select:focus,.model-card-field input:focus{
-  border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);
-  background:var(--surface2);
-}
-.model-card-field select{
-  cursor:pointer;appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
-}
-
-/* Model name field — click to select, double-click to edit */
-.model-name-field{position:relative;}
-.model-name-display{
-  display:flex;align-items:center;gap:10px;padding:10px 14px;
-  border-radius:8px;border:1px solid var(--border2);background:var(--surface);
-  cursor:pointer;transition:all 0.2s;min-height:40px;
-}
-.model-name-display:hover{border-color:var(--accent);background:var(--surface2);box-shadow:0 0 0 3px var(--accentDim);}
-.model-name-display .model-name-text{flex:1;font-size:13px;font-family:var(--mono);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.model-name-display .model-name-edit-icon{color:var(--text3);font-size:11px;opacity:0;transition:opacity 0.15s;}
-.model-name-display:hover .model-name-edit-icon{opacity:1;}
-.model-name-edit{
-  width:100%;padding:10px 14px;border-radius:8px;
-  border:1px solid var(--accent);background:var(--surface2);
-  color:var(--text);font-size:13px;font-family:var(--mono);
-  outline:none;box-shadow:0 0 0 3px var(--accentDim);
-}
-
-/* Variants section */
-.model-card-variants{
-  margin-top:16px;padding-top:16px;
-  border-top:1px solid var(--border2);
-  background:rgba(0,0,0,0.15);
-  border-radius:0 0 16px 16px;
-}
-.variant-label{
-  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
-  color:var(--text3);margin-bottom:10px;
-  display:flex;align-items:center;gap:6px;
-}
-.variant-label::before{content:'';flex:1;height:1px;background:var(--border2);}
-.variant-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.variant-row:last-child{margin-bottom:0;}
-.variant-name{
-  font-size:12px;color:var(--text2);min-width:70px;font-family:var(--mono);
-  padding:4px 8px;background:var(--surface2);border-radius:4px;text-align:center;
-}
-.variant-row .model-card-field{margin-bottom:0;flex:1;}
-.variant-row select{font-size:12px;padding:6px 28px 6px 10px;min-width:80px;width:auto;flex-shrink:0;}
-.variant-row .model-name-field{flex:1;min-width:0;}
-
-/* Utility model cards (Title + Fallback) */
-.utility-models-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;margin-top:20px;}
-.utility-card{
-  background:linear-gradient(145deg,var(--surface) 0%,var(--surface2) 100%);
-  border:1px solid var(--border2);border-radius:16px;overflow:hidden;
-  transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
-  box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-.utility-card:hover{
-  border-color:rgba(124,58,237,0.3);
-  box-shadow:0 8px 32px rgba(0,0,0,0.2);
-  transform:translateY(-2px);
-}
-.utility-card:hover{border-color:rgba(124,58,237,0.2);}
-.utility-card-header{
-  display:flex;align-items:center;gap:12px;padding:16px 18px;
-  border-bottom:1px solid var(--border2);
-  background:linear-gradient(135deg,var(--surface2) 0%,rgba(124,58,237,0.03) 100%);
-}
-.utility-card-header h3{font-size:14px;font-weight:600;color:var(--text);margin:0;flex:1;}
-.utility-card-header .utility-desc{font-size:11px;color:var(--text3);font-weight:400;}
-.utility-card-body{padding:18px;}
-
-/* Dropdown overlay for model/provider selection */
-._dropdown-overlay{position:fixed;z-index:1000;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.4);overflow:hidden;min-width:260px;max-width:380px;}
-._dropdown-search{width:100%;padding:8px 10px;border:none;border-bottom:1px solid var(--border2);background:transparent;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;}
-._dropdown-list{max-height:240px;overflow-y:auto;}
-._dropdown-item{padding:7px 12px;cursor:pointer;font-size:12px;font-family:var(--mono);color:var(--text2);display:flex;align-items:center;gap:8px;transition:background 0.1s;}
-._dropdown-item:hover{background:var(--surface3);}
-._dropdown-item.selected{background:var(--accentDim);color:var(--accent2);}
-._dropdown-item img._dd-logo{width:14px;height:14px;object-fit:contain;}
-._dropdown-item img._dd-logo-mask{width:14px;height:14px;object-fit:contain;filter:brightness(0) invert(1);opacity:0.7;}
-
-/* Log viewer */
-.log-section{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;}
-.log-bar{
-  display:flex;align-items:center;gap:12px;padding:10px 16px;
-  border-bottom:1px solid var(--border2);background:var(--surface2);
-}
-.log-bar label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:500;}
-.log-bar select{
-  padding:4px 8px;border-radius:4px;border:1px solid var(--border2);
-  background:var(--surface3);color:var(--text2);font-size:12px;outline:none;
-}
-.log-bar .toggle-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;}
-.log-bar .toggle-label input{accent-color:var(--accent);}
-.log-out{
-  height:420px;overflow-y:auto;padding:14px 16px;
-  font-family:var(--mono);font-size:12px;line-height:1.7;
-}
-.log-e{color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(255,255,255,0.02);}
-.log-e .ts{color:var(--text3);margin-right:10px;}
-.log-e .lvl{display:inline-block;width:46px;font-weight:600;font-size:11px;}
-.log-e .lvl.DEBUG{color:var(--text3)}
-.log-e .lvl.INFO{color:var(--accent2)}
-.log-e .lvl.WARN{color:var(--yellow)}
-.log-e .lvl.ERROR{color:var(--red)}
-
-/* Empty state */
-.empty-state{text-align:center;padding:60px 20px;}
-.empty-state .icon{width:48px;height:48px;margin:0 auto 16px;color:var(--text3);opacity:0.3;}
-.empty-state p{font-size:14px;color:var(--text2);}
-.empty-state .sub{font-size:12px;color:var(--text3);margin-top:4px;}
-
-/* Request detail */
-.req-detail{
-  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radiusSm);
-  padding:16px;margin-top:4px;display:none;
-}
-.req-detail.open{display:table-row;}
-.req-detail-inner{display:block;padding:16px;max-height:70vh;overflow:auto;word-break:break-all;}
-.req-detail h4{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;font-weight:600;}
-.req-detail pre{
-  background:var(--surface);padding:12px;border-radius:6px;font-size:12px;
-  overflow-x:auto;max-height:260px;overflow-y:auto;white-space:pre-wrap;
-  word-break:break-all;border:1px solid var(--border2);color:var(--text2);
-  font-family:var(--mono);line-height:1.6;
-}
-
-/* Filter bar */
-.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
-.filter-bar .search-wrap{position:relative;flex:1;max-width:280px;}
-.filter-bar .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3);}
-.filter-bar .search-wrap input{
-  width:100%;padding:7px 10px 7px 32px;border-radius:var(--radiusSm);
-  border:1px solid var(--border2);background:var(--surface2);color:var(--text);
-  font-size:13px;font-family:var(--font);outline:none;transition:all var(--transition);
-}
-.filter-bar .search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.filter-bar select{
-  padding:7px 10px;border-radius:var(--radiusSm);border:1px solid var(--border2);
-  background:var(--surface2);color:var(--text2);font-size:12px;outline:none;
-}
-.filter-bar .count{font-size:12px;color:var(--text3);white-space:nowrap;}
-
-/* Pagination */
-.pagination{display:flex;align-items:center;justify-content:center;gap:6px;padding:16px 0 0}
-.pagination .page-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;transition:all var(--transition);font-family:var(--font)}
-.pagination .page-btn:hover{background:var(--surface3);color:var(--text)}
-.pagination .page-btn.active{background:var(--accentDim);color:var(--accent2);border-color:var(--accentDim)}
-.pagination .page-btn:disabled{opacity:0.3;cursor:default}
-.pagination .page-info{font-size:12px;color:var(--text3);padding:0 8px}
-
-/* Date chip */
-.date-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;transition:all var(--transition)}
-.date-chip:hover{background:var(--surface3);color:var(--text)}
-.date-chip.active{background:var(--accentDim);color:var(--accent2);border-color:var(--accentDim)}
-.date-chip .dc-count{font-size:10px;background:var(--surface);padding:1px 5px;border-radius:4px;color:var(--text3)}
-
-/* Toggle */
-.switch{position:relative;width:36px;height:20px;background:var(--surface3);border-radius:10px;cursor:pointer;transition:background var(--transition);flex-shrink:0;}
-.switch.on{background:var(--green);}
-.switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform var(--transition);}
-.switch.on::after{transform:translateX(16px);}
-
-/* Loading skeleton */
-.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* Toast */
-.toast{
-  position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:var(--radiusSm);
-  background:var(--surface2);color:var(--text);font-size:13px;font-weight:450;
-  border:1px solid var(--border2);box-shadow:var(--shadowLg);
-  opacity:0;transform:translateY(16px) scale(0.96);transition:all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index:9999;pointer-events:none;backdrop-filter:blur(12px);
-}
-.toast.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
-.toast.error{border-color:var(--redDim);color:var(--red);}
-
-/* Tooltip */
-[data-tooltip]{position:relative;}
-[data-tooltip]:hover::after{
-  content:attr(data-tooltip);position:absolute;bottom:calc(100% + 6px);left:50%;
-  transform:translateX(-50%);background:var(--surface3);color:var(--text2);
-  font-size:11px;padding:4px 8px;border-radius:4px;white-space:nowrap;
-  border:1px solid var(--border2);z-index:100;pointer-events:none;
-}
-
-/* Matrix table */
-#matrixTable th,#matrixTable td{border-top:1px solid var(--border2)}
-#matrixTable thead tr th{background:var(--surface2)}
-#matrixTable tbody tr:hover td{background:rgba(255,255,255,0.02)}
-#matrixTable tbody tr:hover td:first-child{background:var(--surface)}
-.matrix-alias:focus,.matrix-cell:focus{z-index:10;position:relative}
-
-/* Card component for cost charts */
-  .card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:20px;transition:all var(--transition)}
-  .card:hover{border-color:rgba(255,255,255,0.08)}
-  .card-header{font-size:13px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:var(--text)}
-  .card .chart-wrap{position:relative;width:100%;min-height:220px}
-  .card .chart-wrap canvas{width:100%!important}
-  .card .cost-table{font-size:11px;color:var(--text3);margin-top:12px;border-top:1px solid var(--border2);padding-top:10px;max-height:0;overflow:hidden;transition:max-height var(--transition)}
-  .card .cost-table.open{max-height:400px;overflow-y:auto}
-  .card .cost-table table{width:100%;border-collapse:collapse;font-size:11px}
-  .card .cost-table th{padding:3px 6px;text-align:left;color:var(--text3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.04em}
-  .card .cost-table td{padding:3px 6px;color:var(--text2);border-top:1px solid var(--border2)}
-  .cost-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
-  .cost-summary .stat-card{padding:16px}
-  .cost-summary .stat-card .s-value{font-size:22px}
-  
-  @media(max-width:900px){
-  .sidebar{width:60px}
-  .sidebar-header .brand,.sidebar-footer .footer-info,.nav-item span{display:none}
-  .nav-item{padding:10px;justify-content:center}
-  .nav-item.active::before{display:none}
-  .nav-item .badge{display:none}
-  .sidebar-header{padding:16px 14px;justify-content:center}
-  .sidebar-footer{padding:14px;justify-content:center}
-  .content{padding:20px 16px}
-  .topbar{padding:14px 20px}
-  .stat-grid{grid-template-columns:repeat(3,1fr)}
-  .config-row{grid-template-columns:1fr}
-  .form-row{grid-template-columns:1fr}
-}
-</style>
+<link rel="stylesheet" href="dashboard.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -551,10 +13,10 @@ tbody tr:hover{background:var(--surface2);}
 <!-- Sidebar -->
 <aside class="sidebar">
   <div class="sidebar-header">
-    <img src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" alt="" class="logo-img" width="32" height="32">
+    <img src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" alt="" class="logo-img" width="28" height="28">
     <div class="brand">
       <h1>Antigravity</h1>
-      <span>Proxy Dashboard</span>
+      <span>Proxy</span>
     </div>
   </div>
   <nav class="nav">
@@ -608,7 +70,7 @@ tbody tr:hover{background:var(--surface2);}
     </div>
   </div>
   <div class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
     <span>Collapse</span>
   </div>
 </aside>
@@ -620,15 +82,15 @@ tbody tr:hover{background:var(--surface2);}
       <h2 id="pageTitle">Dashboard</h2>
       <span class="subtitle" id="pageSubtitle">Overview &amp; stats</span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div class="search-wrap" style="width:200px;position:relative">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="globalSearch" placeholder="Search all (/)..." onkeydown="if(event.key==='Enter')searchAll()" style="width:100%;padding:6px 10px 6px 28px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--font);outline:none">
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="search-wrap" style="width:180px;position:relative">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text3);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="globalSearch" placeholder="Search (/)..." onkeydown="if(event.key==='Enter')searchAll()" style="width:100%;padding:5px 8px 5px 26px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-family:var(--font);outline:none">
       </div>
     </div>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm" onclick="reloadAll()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Refresh
       </button>
     </div>
@@ -641,7 +103,7 @@ tbody tr:hover{background:var(--surface2);}
       <div class="stat-grid" id="statsGrid">
         <div class="stat-card">
           <div class="icon-wrap purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
           <div class="s-label">Requests</div>
           <div class="s-value" id="statRequests">0</div>
@@ -649,31 +111,31 @@ tbody tr:hover{background:var(--surface2);}
         </div>
         <div class="stat-card">
           <div class="icon-wrap green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <div class="s-label">Tokens</div>
           <div class="s-value" id="statTokens">0</div>
-          <div class="s-sub" id="statTokensSub" style="font-size:11px;color:var(--text3)">prompt + output</div>
+          <div class="s-sub" id="statTokensSub" style="font-size:10px;color:var(--text3)">prompt + output</div>
         </div>
         <div class="stat-card" style="grid-column:span 1">
-          <div class="icon-wrap" style="background:rgba(59,130,246,0.12);color:var(--blue)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <div class="icon-wrap" style="background:rgba(96,165,250,0.1);color:var(--blue)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           </div>
           <div class="s-label">Prompt Tokens</div>
-          <div class="s-value" id="statPromptTokens" style="font-size:22px">0</div>
+          <div class="s-value" id="statPromptTokens" style="font-size:20px">0</div>
           <div class="s-sub">input to model</div>
         </div>
         <div class="stat-card" style="grid-column:span 1">
-          <div class="icon-wrap" style="background:rgba(168,85,247,0.12);color:var(--accent2)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <div class="icon-wrap" style="background:var(--accentDim);color:var(--accent)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
           <div class="s-label">Output Tokens</div>
-          <div class="s-value" id="statOutputTokens" style="font-size:22px">0</div>
+          <div class="s-value" id="statOutputTokens" style="font-size:20px">0</div>
           <div class="s-sub">generated by model</div>
         </div>
         <div class="stat-card">
           <div class="icon-wrap yellow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           </div>
           <div class="s-label">Tool Calls</div>
           <div class="s-value" id="statToolCalls">0</div>
@@ -681,7 +143,7 @@ tbody tr:hover{background:var(--surface2);}
         </div>
         <div class="stat-card">
           <div class="icon-wrap red">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
           <div class="s-label">Errors</div>
           <div class="s-value" id="statErrors">0</div>
@@ -718,7 +180,7 @@ tbody tr:hover{background:var(--surface2);}
       <div class="filter-bar">
         <div class="search-wrap" style="max-width:160px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <input type="date" id="reqDate" onchange="renderRequests()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="date" id="reqDate" onchange="renderRequests()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
         <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -911,7 +373,7 @@ tbody tr:hover{background:var(--surface2);}
         </div>
         <div class="form-group">
           <label>Blocked Content Patterns</label>
-          <textarea id="cfgBlockPatterns" rows="2" placeholder="regex pattern per line" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;resize:vertical"></textarea>
+          <textarea id="cfgBlockPatterns" rows="2" placeholder="regex pattern per line" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;resize:vertical"></textarea>
           <div class="hint">Regular expressions (one per line). Matches against request content. Example: <code style="background:var(--surface3);padding:1px 4px;border-radius:3px">ignore.*instructions</code></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:4px">
@@ -944,8 +406,8 @@ tbody tr:hover{background:var(--surface2);}
         </h3>
         <form autocomplete="off" novalidate onsubmit="saveAuth();return false" style="display:contents">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <input type="text" id="authUsername" placeholder="Username" autocomplete="off" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
-            <input type="password" id="authPassword" placeholder="Password" autocomplete="new-password" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
+            <input type="text" id="authUsername" placeholder="Username" autocomplete="off" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
+            <input type="password" id="authPassword" placeholder="Password" autocomplete="new-password" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
             <button class="btn btn-sm btn-primary" id="authSaveBtn">Save</button>
             <button class="btn btn-sm" id="authDisableBtn" onclick="disableAuth()" type="button" style="color:var(--red)">Disable Auth</button>
           </div>
@@ -974,7 +436,7 @@ tbody tr:hover{background:var(--surface2);}
         </h3>
         <form autocomplete="off" novalidate onsubmit="saveWebhook();return false" style="display:contents">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <input type="url" id="webhookUrlInput" placeholder="https://hooks.example.com/webhook" autocomplete="off" style="flex:1;min-width:250px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;outline:none;font-family:var(--mono)">
+            <input type="url" id="webhookUrlInput" placeholder="https://hooks.example.com/webhook" autocomplete="off" style="flex:1;min-width:250px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none;font-family:var(--mono)">
             <button class="btn btn-sm btn-primary" id="webhookSaveBtn">Save</button>
             <button class="btn btn-sm" id="webhookClearBtn" onclick="clearWebhook()" type="button" style="color:var(--text3)">Clear</button>
             <button class="btn btn-sm" id="webhookTestBtn" onclick="testWebhook()" type="button">Test Webhook</button>
@@ -1052,7 +514,7 @@ tbody tr:hover{background:var(--surface2);}
         <div style="display:grid;grid-template-columns:1fr 140px 1fr auto;gap:8px;align-items:end">
           <div class="model-card-field" style="margin-bottom:0">
             <label>Model Name (sent by Antigravity)</label>
-            <input id="customModelAlias" type="text" placeholder="e.g. gemini-2.5-flash" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--mono);outline:none">
+            <input id="customModelAlias" type="text" placeholder="e.g. gemini-2.5-flash" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--mono);outline:none">
           </div>
           <div class="model-card-field" style="margin-bottom:0">
             <label>Provider</label>
@@ -1075,7 +537,7 @@ tbody tr:hover{background:var(--surface2);}
       </div>
       <form onsubmit="browseFetch(false);return false" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <div id="browseProviderSelect" style="width:160px"></div>
-        <input type="password" autocomplete="new-password" id="browseApiKey" placeholder="API key (optional)" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;outline:none;width:200px;font-family:var(--mono)">
+        <input type="password" autocomplete="new-password" id="browseApiKey" placeholder="API key (optional)" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none;width:200px;font-family:var(--mono)">
         <button class="btn btn-sm" id="browseFetchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Fetch</button>
         <button class="btn btn-sm btn-ghost" id="browseRefreshBtn" type="button" onclick="browseFetch(true)" data-tooltip="Force-refresh from provider, bypass cache" title="Force-refresh from provider (bypass 10-min cache)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button>
         <span id="browseFetchStatus" style="font-size:11px;color:var(--text3)"></span>
@@ -1083,7 +545,7 @@ tbody tr:hover{background:var(--surface2);}
       <div id="browseResultsPanel" style="display:none">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="browseSearch" placeholder="Search models..." oninput="renderBrowseModels()" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+          <input id="browseSearch" placeholder="Search models..." oninput="renderBrowseModels()" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
           <span id="browseResultCount" style="font-size:12px;color:var(--text3);white-space:nowrap">0 models</span>
         </div>
         <div id="browseModelList" style="max-height:400px;overflow-y:auto;border:1px solid var(--border2);border-radius:8px;padding:4px"></div>
@@ -1105,7 +567,7 @@ tbody tr:hover{background:var(--surface2);}
       <div class="filter-bar" style="flex-wrap:wrap;margin-bottom:16px">
         <div class="search-wrap" style="max-width:200px;position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <input type="date" id="costDate" onchange="loadCostData()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="date" id="costDate" onchange="loadCostData()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
         <button class="btn btn-sm" id="costTodayBtn" onclick="setCostToday()" style="padding:6px 12px">Today</button>
         <button class="btn btn-sm btn-ghost" id="costAllBtn" onclick="setCostAll()" style="padding:6px 12px">All time</button>
@@ -1232,13 +694,13 @@ tbody tr:hover{background:var(--surface2);}
       <div class="filter-bar" style="flex-wrap:wrap">
         <div class="search-wrap" style="max-width:200px;position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <input type="date" id="historyDate" onchange="loadRequestsByDate()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="date" id="historyDate" onchange="loadRequestsByDate()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
         <span class="count" id="historyCount">Select a date</span>
         <span style="flex:1"></span>
         <div class="search-wrap" style="max-width:180px;position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="historySearch" placeholder="Search by model/provider..." oninput="filterHistory()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="text" id="historySearch" placeholder="Search by model/provider..." oninput="filterHistory()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
       </div>
       <div id="historyDateList" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px"></div>
@@ -1284,8 +746,8 @@ tbody tr:hover{background:var(--surface2);}
           <div style="font-size:12px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Manual overrides (any model)</div>
           <div id="reManualList" style="display:flex;flex-direction:column;gap:6px"></div>
           <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-            <input id="reManualModel" placeholder="model name, e.g. deepseek/deepseek-r1" style="flex:1;max-width:320px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
-            <select id="reManualEffort" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;outline:none">
+            <input id="reManualModel" placeholder="model name, e.g. deepseek/deepseek-r1" style="flex:1;max-width:320px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#111115;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+            <select id="reManualEffort" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#111115;color:var(--text);font-size:12px;outline:none">
               <option value="low">low</option>
               <option value="medium" selected>medium</option>
               <option value="high">high</option>
@@ -1704,7 +1166,7 @@ function renderHistoryTable() {
         ${renderFailoverTimeline(r.failover_events ? (typeof r.failover_events==='string' ? safeJsonParse(r.failover_events) : r.failover_events) : null)}
         <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-sm" id="replay-${rid}" onclick="replayRequest('${rid}')">↻ Replay</button>
-          <select id="rmodel-${rid}" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:var(--mono);outline:none;max-width:200px">
+          <select id="rmodel-${rid}" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:#111115;color:var(--text);font-size:11px;font-family:var(--mono);outline:none;max-width:200px">
             <option value="${esc(r.model||'')}">${esc(r.model||'')} (original)</option>
             ${_allModelNames.filter(m => m !== r.model).map(m => '<option value="'+esc(m)+'">'+esc(m)+'</option>').join('')}
           </select>
@@ -2265,12 +1727,12 @@ function attachProviderField(containerId, alias, selected, onChange) {
   wrapper.appendChild(sel);
   const trigger = document.createElement('div');
   trigger.className = 'psel-trigger';
-  trigger.style.cssText = 'display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;outline:none;user-select:none;min-height:34px';
+  trigger.style.cssText = 'display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;cursor:pointer;outline:none;user-select:none;min-height:34px';
   trigger.innerHTML = (meta ? logoHtml(meta, 14) : '') + '<span style="flex:1">' + (meta?.label || selected) + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3);flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>';
   wrapper.appendChild(trigger);
   const menu = document.createElement('div');
   menu.className = 'psel-menu';
-  menu.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;z-index:9999;display:none;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.4)';
+  menu.style.cssText = 'position:fixed;background:#1a1a20;border:1px solid var(--border2);border-radius:6px;z-index:9999;display:none;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
   ALL_PROVIDERS.forEach(p => {
     const pm2 = PROVIDER_META[p] || { label: p, color: '#888' };
     const item = document.createElement('div');
@@ -2318,13 +1780,13 @@ function attachModelField(containerId, alias, provider, modelName) {
   wrapper.appendChild(hi);
   const trigger = document.createElement('div');
   trigger.className = 'rsel-trigger';
-  trigger.style.cssText = 'display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--mono);cursor:pointer;outline:none;user-select:none;min-height:34px';
+  trigger.style.cssText = 'display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--mono);cursor:pointer;outline:none;user-select:none;min-height:34px';
   const pm = PROVIDER_META[provider] || PROVIDER_META.openrouter;
   trigger.innerHTML = '<span style="display:inline-flex;width:14px;height:14px;flex-shrink:0">' + logoHtml(pm, 14) + '</span><span class="rsel-text" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:' + (modelName ? 'var(--text)' : 'var(--text3)') + '">' + esc(modelName || 'Select model...') + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;flex-shrink:0;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
   wrapper.appendChild(trigger);
   const menu = document.createElement('div');
   menu.className = 'rsel-menu';
-  menu.style.cssText = 'position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;z-index:9999;display:none;max-height:280px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.4)';
+  menu.style.cssText = 'position:fixed;background:#1a1a20;border:1px solid var(--border2);border-radius:6px;z-index:9999;display:none;max-height:280px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
   const search = document.createElement('input');
   search.placeholder = 'Search ' + (PROVIDER_META[provider]?.label || provider) + ' models...';
   search.style.cssText = 'width:100%;padding:7px 10px;border:none;border-bottom:1px solid var(--border2);background:transparent;color:var(--text);font-size:11px;font-family:var(--mono);outline:none';
@@ -2660,12 +2122,12 @@ function createProviderSelect(selected, onChange) {
   const meta = PROVIDER_META[selected] || PROVIDER_META[ALL_PROVIDERS[0]];
   const trigger = document.createElement('div');
   trigger.className = 'psel-trigger';
-  trigger.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;outline:none;user-select:none';
+  trigger.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;cursor:pointer;outline:none;user-select:none';
   trigger.innerHTML = (meta ? logoHtml(meta, 14) : '') + '<span style="flex:1">' + (meta?.label || selected) + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
   wrapper.appendChild(trigger);
   const menu = document.createElement('div');
   menu.className = 'psel-menu';
-  menu.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;z-index:200;display:none;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
+  menu.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:#1a1a20;border:1px solid var(--border2);border-radius:6px;z-index:200;display:none;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.4)';
   ALL_PROVIDERS.forEach(p => {
     const pm = PROVIDER_META[p] || { label: p, color: '#888' };
     const item = document.createElement('div');
@@ -2719,7 +2181,7 @@ function renderReasoningEffort() {
           <div style="font-size:11px;color:var(--text3);margin-top:1px">${esc(item.label || '')}</div>
         </div>
         <select onchange="reSetEffort('${esc(item.model)}',this.value)"
-          style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-size:12px;outline:none;cursor:pointer">
+          style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none;cursor:pointer">
           ${EFFORT_OPTIONS.map(e => `<option value="${e}" ${e === current ? 'selected' : ''}>${e}</option>`).join('')}
         </select>
         <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${current === 'default' ? 'var(--surface3)' : 'var(--accentDim)'};color:${current === 'default' ? 'var(--text3)' : 'var(--accent2)'}">
@@ -2743,7 +2205,7 @@ function renderReasoningEffort() {
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px">
         <span style="flex:1;font-size:12px;font-family:var(--mono)">${esc(model)}</span>
         <select onchange="reSetEffort('${esc(model)}',this.value)"
-          style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface3);color:var(--text);font-size:12px;outline:none">
+          style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none">
           ${EFFORT_OPTIONS.map(e => `<option value="${e}" ${e === effort ? 'selected' : ''}>${e}</option>`).join('')}
         </select>
         <button onclick="reRemove('${esc(model)}')" title="Remove"
@@ -3218,8 +2680,8 @@ function renderPricingEditor(data) {
         <span style="font-size:10px;color:var(--text3);margin-right:4px">Input / 1M</span>
         <span style="font-size:10px;color:var(--text3);margin-right:10px">Output / 1M</span>
         <span style="font-size:11px;color:var(--text3);margin-right:4px">Default</span>
-        <input class="pdef-in" data-provider="${pid}" type="number" step="any" min="0" value="${def.input}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
-        <input class="pdef-out" data-provider="${pid}" type="number" step="any" min="0" value="${def.output}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Default output price per 1M tokens">
+        <input class="pdef-in" data-provider="${pid}" type="number" step="any" min="0" value="${def.input}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
+        <input class="pdef-out" data-provider="${pid}" type="number" step="any" min="0" value="${def.output}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Default output price per 1M tokens">
         <button class="btn btn-sm btn-ghost" onclick="addPricingRow('${pid}')" style="font-size:11px">+ Model</button>
       </div>
       <div id="pe-${pid}">
@@ -3229,9 +2691,9 @@ function renderPricingEditor(data) {
         ${entries.length === 0 ? '<div style="font-size:12px;color:var(--text3);padding:4px 0">No model-specific overrides.</div>' : ''}
         ${entries.map(([model, price], i) => `
           <div class="prow" data-provider="${pid}" data-idx="${i}" style="display:grid;grid-template-columns:1fr 80px 80px 28px;gap:6px;margin-bottom:6px;align-items:center">
-            <input class="pmodel" value="${esc(model)}" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
-            <input class="pinput" type="number" step="any" min="0" value="${price.input}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
-            <input class="poutput" type="number" step="any" min="0" value="${price.output}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Output price per 1M tokens">
+            <input class="pmodel" value="${esc(model)}" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+            <input class="pinput" type="number" step="any" min="0" value="${price.input}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
+            <input class="poutput" type="number" step="any" min="0" value="${price.output}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Output price per 1M tokens">
             <button class="btn btn-icon" onclick="removePricingRow(this)" style="width:28px;height:28px;padding:0;font-size:14px;color:var(--text3)">✕</button>
           </div>
         `).join('')}
@@ -3257,9 +2719,9 @@ function addPricingRow(provider) {
   div.className = 'prow';
   div.style.cssText = 'display:grid;grid-template-columns:1fr 80px 80px 28px;gap:6px;margin-bottom:6px;align-items:center';
   div.innerHTML = `
-    <input class="pmodel" value="" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
-    <input class="pinput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
-    <input class="poutput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
+    <input class="pmodel" value="" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+    <input class="pinput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
+    <input class="poutput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
     <button class="btn btn-icon" onclick="removePricingRow(this)" style="width:28px;height:28px;padding:0;font-size:14px;color:var(--text3)">✕</button>
   `;
   container.appendChild(div);

@@ -94,6 +94,8 @@ function port4000Handler(req: http.IncomingMessage, res: http.ServerResponse): v
   const pathname = parsed.pathname;
   // Route dashboard pages, login, static files, and API calls to the dashboard handler.
   // Anything else (e.g. /v1internal:*) is forwarded to Google's backend.
+  const staticExts = ['.css', '.js', '.json', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'];
+  const hasStaticExt = staticExts.some(ext => pathname.endsWith(ext));
   const isDashboardPath =
     pathname === '/' ||
     pathname === '/login' ||
@@ -105,7 +107,8 @@ function port4000Handler(req: http.IncomingMessage, res: http.ServerResponse): v
     pathname.startsWith('/css/') ||
     pathname.startsWith('/img/') ||
     pathname.startsWith('/assets/') ||
-    pathname.startsWith('/static/');
+    pathname.startsWith('/static/') ||
+    hasStaticExt;
   if (isDashboardPath) {
     dashboardHandler(req, res);
     return;
@@ -374,18 +377,19 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
 
   // Strip massive inline context and inject agent-context.md reference
   // (unless passthrough mode is enabled — see Config tab > Context Strip Mode)
-  const contents = config.contextStripMode === 'passthrough'
+  const isPassthrough = config.contextStripMode === 'passthrough';
+  const contents = isPassthrough
     ? (inner.contents || [])
     : stripInlineContext(inner.contents || []);
   // Wrap any tool result whose target file is the agent-context.md itself
-  if (config.contextStripMode !== 'passthrough') {
+  if (!isPassthrough) {
     wrapContextFileToolResults(contents, AGENT_CONTEXT_PATH);
   }
   // Antigravity sends "systemInstruction" (camelCase) — try both snake_case and camelCase
   const rawSystemText = inner.system_instruction?.parts?.[0]?.text
     || inner.systemInstruction?.parts?.[0]?.text
     || '';
-  const systemInstruction = config.contextStripMode === 'passthrough'
+  const systemInstruction = isPassthrough
     ? rawSystemText
     : stripSystemContext(rawSystemText);
 

@@ -243,6 +243,31 @@ export function createDashboardHandler(): (req: http.IncomingMessage, res: http.
     // Static login page is also public so the user can authenticate.
     const publicApi = new Set(['/api/health', '/api/auth/login', '/api/auth/me']);
     const publicPaths = new Set(['/login', '/login.html']);
+
+    // Serve static dashboard files (CSS, JS, images) — public, no auth required
+    const dashboardDir = path.resolve(__dirname, '..', 'dashboard');
+    const staticExts: Record<string, string> = {
+      '.css': 'text/css; charset=utf-8',
+      '.js': 'text/javascript; charset=utf-8',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.svg': 'image/svg+xml',
+      '.ico': 'image/x-icon',
+    };
+    const ext = path.extname(url.pathname).toLowerCase();
+    if (ext && staticExts[ext] && !url.pathname.startsWith('/api/')) {
+      const filePath = path.resolve(dashboardDir, '.' + url.pathname);
+      if (filePath.startsWith(dashboardDir) && fs.existsSync(filePath)) {
+        res.writeHead(200, {
+          'content-type': staticExts[ext],
+          'cache-control': 'public, max-age=3600',
+        });
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+    }
+
     const isApiAuthEndpoint = url.pathname === '/api/auth/login' || url.pathname === '/api/auth/logout' || url.pathname === '/api/auth/me';
     const isPublic = publicApi.has(url.pathname) || isApiAuthEndpoint || publicPaths.has(url.pathname) || url.pathname === '/favicon.ico';
 
