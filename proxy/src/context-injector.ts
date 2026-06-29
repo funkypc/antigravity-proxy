@@ -2,6 +2,9 @@ import { ANTIGRAVITY_CONTEXT } from './antigravity-context.js';
 import type { MappedRequest } from './mapper.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Cache for lite context content
 let _liteContextContent: string | null = null;
@@ -10,8 +13,9 @@ function getLiteContextContent(): string | null {
   if (_liteContextContent !== null) return _liteContextContent;
 
   // Try to find agent-context-lite.md
-  const litePath = process.env.AGENT_CONTEXT_LITE_PATH ||
-    path.resolve(process.cwd(), 'agent-context-lite.md');
+  // Check env var first, then fall back to path relative to proxy/src (two levels up to repo root)
+  const litePath = process.env.AGENT_CONTEXT_LITE_PATH
+    || path.resolve(__dirname, '..', '..', 'agent-context-lite.md');
 
   if (fs.existsSync(litePath)) {
     _liteContextContent = fs.readFileSync(litePath, 'utf-8');
