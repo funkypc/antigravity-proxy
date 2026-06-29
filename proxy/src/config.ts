@@ -11,7 +11,7 @@ const ENV_PATH = path.resolve(__dirname, '..', '.env');
 
 dotenv.config({ path: ENV_PATH });
 
-const VALID_CONTEXT_STRIP_MODES = ['passthrough', 'strip'];
+const VALID_CONTEXT_STRIP_MODES = ['passthrough', 'strip', 'lite'];
 
 function validateContextStripMode(value: string): 'strip' | 'passthrough' {
   if (VALID_CONTEXT_STRIP_MODES.includes(value)) {
