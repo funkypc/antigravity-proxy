@@ -2,6 +2,7 @@ import { logger } from '../logger.js';
 import type { OpenAIMessage } from '../mapper.js';
 import type { StreamChunk, ModelAdapter } from './types.js';
 import { poolFetch } from '../http-pool.js';
+import { parseToolArgs } from '../utils/parse-tool-args.js';
 
 export class GoogleAdapter implements ModelAdapter {
   provider = 'google';
@@ -13,16 +14,37 @@ export class GoogleAdapter implements ModelAdapter {
     this.apiKey = apiKey;
   }
 
+  /**
+   * Build the Google streaming endpoint URL.
+   * SECURITY: API key is sent in headers (x-goog-api-key), NOT in URL.
+   * Keys in URLs leak to logs, HTTP proxies, and referer headers.
+   */
+  private buildStreamUrl(model: string): string {
+    return `${this.baseUrl}/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+  }
+
+  /**
+   * Build request headers. Includes the API key as x-goog-api-key.
+   * Never place the API key in the URL.
+   */
+  private buildAuthHeaders(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': this.apiKey,
+    };
+  }
+
   async *stream(
     model: string,
     messages: OpenAIMessage[],
     tools?: Record<string, unknown>,
     config?: Record<string, unknown>,
     signal?: AbortSignal,
+    system?: string,
   ): AsyncGenerator<StreamChunk> {
-    const body = this.buildRequest(model, messages, tools, config);
-    const url = `${this.baseUrl}/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${this.apiKey}`;
-    const response = await this.fetchResponse(url, body, signal);
+    const body = this.buildRequest(model, messages, tools, config, system);
+    const url = this.buildStreamUrl(model);
+    const response = await this.fetchResponse(url, body, this.buildAuthHeaders(), signal);
 
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();
@@ -73,11 +95,16 @@ export class GoogleAdapter implements ModelAdapter {
     messages: OpenAIMessage[],
     tools?: Record<string, unknown>,
     config?: Record<string, unknown>,
+    system?: string,
   ): Record<string, unknown> {
     const body: Record<string, unknown> = {
       contents: this.convertMessages(messages),
       generationConfig: {},
     };
+    // Include system instruction as native Gemini system_instruction field
+    if (system) {
+      (body as any).system_instruction = { parts: [{ text: system }] };
+    }
     if (tools && Object.keys(tools).length > 0) {
       (body as any).tools = [{
         functionDeclarations: Object.entries(tools).map(([name, tool]: [string, any]) => ({
@@ -98,12 +125,14 @@ export class GoogleAdapter implements ModelAdapter {
 
   private convertMessages(messages: OpenAIMessage[]): any[] {
     const result: any[] = [];
+    const callNameMap = new Map<string, string>();
     for (const m of messages) {
       if (m.role === 'system') continue;
       if (m.role === 'tool') {
+        const name = callNameMap.get(m.tool_call_id || '') || 'unknown';
         result.push({
           role: 'function',
-          parts: [{ functionResponse: { name: m.tool_call_id || 'unknown', response: { content: typeof m.content === 'string' ? m.content : '' } } }],
+          parts: [{ functionResponse: { name, response: { content: typeof m.content === 'string' ? m.content : '' } } }],
         });
         continue;
       }
@@ -129,6 +158,7 @@ export class GoogleAdapter implements ModelAdapter {
           parts.push({
             functionCall: { name: tc.function.name, args: this.parseToolArgs(tc.function.arguments) },
           });
+          callNameMap.set(tc.id, tc.function.name);
         }
       }
       result.push({ role: m.role === 'assistant' ? 'model' : 'user', parts });
@@ -136,10 +166,10 @@ export class GoogleAdapter implements ModelAdapter {
     return result;
   }
 
-  private async fetchResponse(url: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<Response> {
+  private async fetchResponse(url: string, body: Record<string, unknown>, headers: Record<string, string>, signal?: AbortSignal): Promise<Response> {
     const response = await poolFetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
       signal,
     });
@@ -151,6 +181,6 @@ export class GoogleAdapter implements ModelAdapter {
   }
 
   private parseToolArgs(raw: string): Record<string, unknown> {
-    try { return JSON.parse(raw); } catch { return {}; }
+    return parseToolArgs(raw);
   }
 }

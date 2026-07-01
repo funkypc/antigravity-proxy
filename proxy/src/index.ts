@@ -7,22 +7,34 @@ import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { logger } from './logger.js';
 import { validateApiKey } from './auth.js';
-import { streamResponse } from './engine.js';
+import { streamResponse, saveReasoning, injectReasoning, extractConvId } from './engine.js';
 import { reloadRouter } from './engine.js';
-import { mapContentsToMessages, mapTools, mapGenerationConfig, extractToolCalls } from './mapper.js';
+import { mapContentsToMessages, mapTools, mapGenerationConfig } from './mapper.js';
 import { requestStore } from './request-store.js';
 import { createDashboardHandler } from './dashboard.js';
 import * as db from './db.js';
 import { calculateCost } from './pricing.js';
 import { httpPool } from './http-pool.js';
-import { checkRateLimit, recordRequest, setRateLimitConfig, resetRateLimits } from './rate-limiter.js';
+import { checkRateLimit, recordRequest, setRateLimitConfig } from './rate-limiter.js';
 import { checkBlocked } from './blocklist.js';
-import { scanLocalProviders, getCachedLocalProviders } from './local-discovery.js';
+import { scanLocalProviders } from './local-discovery.js';
+import { installAgentContext } from './install-context.js';
 import { getWorkspaceContextEnvelope, wrapToolResultForContextFile, isWorkspaceContextFile } from './workspace-context.js';
+import { getSessionId, setSessionId } from './session-store.js';
+import { safeWrite } from './utils/safe-write.js';
+import { formatErrorResponse } from './utils/error-response.js';
+import { injectContext } from './context-injector.js';
 import type { Content, Tool, GenerationConfig } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let backendIp = '';
+
+// Set workspace root so antigravity-context.ts can inject it into the system prompt.
+// If WORKSPACE_ROOT is not set via env/dashboard, default to the repo root.
+// Users can override this in the dashboard Config tab to point to their actual project.
+if (!process.env.WORKSPACE_ROOT) {
+  process.env.WORKSPACE_ROOT = path.resolve(__dirname, '..', '..');
+}
 
 const INTERCEPT_PATHS = new Set([
   '/v1internal:streamGenerateContent',
@@ -30,11 +42,39 @@ const INTERCEPT_PATHS = new Set([
   '/v1internal:cascadeStreamGenerateContent',
 ]);
 
-const AGENT_CONTEXT_PATH = process.env.AGENT_CONTEXT_PATH
-  || path.resolve(__dirname, '..', '..', 'agent-context.md');
+let AGENT_CONTEXT_PATH = process.env.AGENT_CONTEXT_PATH
+  || (() => {
+    // __dirname is .../proxy/src when running via tsx, and .../proxy/dist when compiled.
+    // agent-context.md lives at .../antigravity/agent-context.md (two levels up from proxy/).
+    const proxyDir = path.resolve(__dirname, '..');
+    return path.resolve(proxyDir, '..', 'agent-context.md');
+  })();
 
 function readAgentContextReference(): string {
   return getWorkspaceContextEnvelope(AGENT_CONTEXT_PATH);
+}
+
+/**
+ * Reads the full agent-context.md file and wraps it with the workspace context
+ * envelope. This provides the model with the complete operating manual while
+ * preventing path/prose extraction as authoritative runtime state.
+ * The file is read once per request because it may change between requests,
+ * but the content is cached in memory to avoid repeated disk I/O within
+ * the same request processing cycle.
+ */
+let _agentContextContent: string | null = null;
+function readAgentContextFull(): string | null {
+  try {
+    if (fs.existsSync(AGENT_CONTEXT_PATH)) {
+      if (_agentContextContent === null) {
+        _agentContextContent = fs.readFileSync(AGENT_CONTEXT_PATH, 'utf-8');
+      }
+      return wrapToolResultForContextFile(AGENT_CONTEXT_PATH, _agentContextContent);
+    }
+  } catch {
+    // Fall through to null
+  }
+  return null;
 }
 
 async function resolveBackend(hostname: string): Promise<string> {
@@ -49,17 +89,37 @@ async function resolveBackend(hostname: string): Promise<string> {
 // Dashboard handler for port 4040
 const dashboardHandler = createDashboardHandler();
 
-// Shared handler for port 4040: dashboard paths or Google forward
-function port4040Handler(req: http.IncomingMessage, res: http.ServerResponse): void {
-  const pathname = req.url || '/';
-  if (pathname === '/' || pathname.startsWith('/api/')) {
+// Shared handler for port 4000: dashboard paths or Google forward
+function port4000Handler(req: http.IncomingMessage, res: http.ServerResponse): void {
+  // Parse the URL to get the pathname (without query string). The dashboard's
+  // own handler does the same, so we must match its routing exactly.
+  const parsed = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  const pathname = parsed.pathname;
+  // Route dashboard pages, login, static files, and API calls to the dashboard handler.
+  // Anything else (e.g. /v1internal:*) is forwarded to Google's backend.
+  const staticExts = ['.css', '.js', '.json', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'];
+  const hasStaticExt = staticExts.some(ext => pathname.endsWith(ext));
+  const isDashboardPath =
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/login.html' ||
+    pathname === '/favicon.ico' ||
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/tabs/') ||
+    pathname.startsWith('/js/') ||
+    pathname.startsWith('/css/') ||
+    pathname.startsWith('/img/') ||
+    pathname.startsWith('/assets/') ||
+    pathname.startsWith('/static/') ||
+    hasStaticExt;
+  if (isDashboardPath) {
     dashboardHandler(req, res);
     return;
   }
   const hostname = 'cloudcode-pa.googleapis.com';
   logger.info('REST forward', { method: req.method, path: pathname });
   const proxyReq = https.request(
-    { hostname: backendIp, port: 443, path: pathname, method: req.method, servername: hostname, rejectUnauthorized: true, headers: { ...req.headers, host: hostname } },
+    { hostname: backendIp, port: 443, path: req.url, method: req.method, servername: hostname, rejectUnauthorized: true, headers: { ...req.headers, host: hostname } },
     (proxyRes) => { res.writeHead(proxyRes.statusCode || 200, proxyRes.headers); proxyRes.pipe(res); },
   );
   proxyReq.on('error', (err) => {
@@ -85,7 +145,7 @@ const BULK_CONTEXT_TAGS = ['skills', 'plugins', 'user_rules'];
 
 function stripInlineContext(contents: Content[]): Content[] {
   const filtered: Content[] = [];
-  let hasAdapterRef = false;
+
   for (const c of contents) {
     const text = c.parts?.map((p: any) => p.text || '').join('') || '';
     const hasBulkTag = BULK_CONTEXT_TAGS.some(tag => text.includes(`<${tag}>`));
@@ -96,6 +156,7 @@ function stripInlineContext(contents: Content[]): Content[] {
     // Extract only the USER_REQUEST and ADDITIONAL_METADATA if they exist within this bulk content
     const requestMatch = text.match(/(<USER_REQUEST>[\s\S]*?<\/USER_REQUEST>)/);
     const metaMatch = text.match(/(<ADDITIONAL_METADATA>[\s\S]*?<\/ADDITIONAL_METADATA>)/);
+
     if (requestMatch || metaMatch) {
       const kept: string[] = [];
       if (requestMatch) kept.push(requestMatch[1]);
@@ -105,23 +166,42 @@ function stripInlineContext(contents: Content[]): Content[] {
       }
     }
   }
-  // Inject agent-context.md reference as first system-level instruction
-  const adapterRef = {
-    role: 'user' as const,
-    parts: [{ text: readAgentContextReference() }],
-  };
-  filtered.unshift(adapterRef);
+  // NOTE: agent-context.md injection is handled by injectContext() in engine.ts
+  // Do NOT inject it here as a user message - that causes duplication.
   return filtered;
 }
 
 function stripSystemContext(text: string): string {
   if (!text) return '';
-  // Strip massive agent identity context that duplicates what's in agent-context.md
-  const identityMatch = text.match(/<identity>[\s\S]*?<\/identity>/);
-  if (identityMatch && text.length > 2000) {
-    return text.replace(/<identity>[\s\S]*?<\/identity>/, 'See agent-context.md for runtime identity.');
+
+  // Extract workspace path from <user_information> BEFORE stripping.
+  // Antigravity puts the user's project directory here:
+  //   d:\AI_AGENTS\antigravitysdk -> d:/AI_AGENTS/antigravitysdk
+  // Without this, the model doesn't know where its files are.
+  const userInfoMatch = text.match(/<user_information>([\s\S]*?)<\/user_information>/);
+  let workspacePath: string | null = null;
+  if (userInfoMatch) {
+    // Match Windows path: d:\path\to\project or /path/to/project
+    const pathMatch = userInfoMatch[1].match(/([A-Za-z]:\\[\w\\.\-]+|\/[\w/.\-]+)/);
+    if (pathMatch) {
+      workspacePath = pathMatch[1];
+    }
   }
-  return text;
+
+  // In strip/lite modes, we completely replace the system instruction.
+  // The native Antigravity system instruction is ~28k tokens containing
+  // tool definitions, behavioral rules, identity, etc. Our agent-context.md
+  // (or lite version) already contains all of this in a compressed form.
+  // Keeping the native instruction AND adding agent-context causes duplication
+  // and wastes tokens.
+  //
+  // We only keep the workspace path so the model knows where it is.
+
+  if (workspacePath) {
+    return `## Current Workspace\nYour current working directory is: \`${workspacePath}\`\nAll file operations (list_dir, view_file, write_to_file, run_command, etc.) should use this directory.`;
+  }
+
+  return '';
 }
 
 /**
@@ -246,61 +326,18 @@ const SAFETY_RATINGS = [
 
 const GROUNDING_METADATA = { groundingChunks: [], groundingSupports: [] };
 
-interface BuildEventOpts {
-  modelVersion: string;
-  projectPath: string;
-  responseId: string;
-  traceId: string;
-  promptTokens: number;
-  finishReason?: string;
-  thoughtText?: string;
-  functionCalls?: { name: string; args: any }[];
-  text?: string;
-}
-
-function buildGoogleEvent(opts: BuildEventOpts): string {
-  const parts: any[] = [];
-  if (opts.thoughtText) parts.push({ thought: true, text: opts.thoughtText });
-  if (opts.functionCalls) {
-    for (const fc of opts.functionCalls) {
-      parts.push({ functionCall: { name: fc.name, args: fc.args } });
-    }
-  } else if (opts.text != null) {
-    parts.push({ text: opts.text });
-  }
-
-  const candidate: any = {
-    index: 0,
-    content: { role: 'model', parts },
-    safetyRatings: SAFETY_RATINGS,
-    groundingMetadata: GROUNDING_METADATA,
-  };
-  if (opts.finishReason) candidate.finishReason = opts.finishReason;
-
-  const outTokens = estTokens(opts.text || '');
-  return `data: ${JSON.stringify({
-    response: {
-      candidates: [candidate],
-      usageMetadata: {
-        promptTokenCount: opts.promptTokens,
-        candidatesTokenCount: outTokens,
-        totalTokenCount: opts.promptTokens + outTokens,
-      },
-      modelVersion: `${opts.projectPath}/publishers/${config.provider}/models/${opts.modelVersion}`,
-      responseId: opts.responseId,
-    },
-    traceId: opts.traceId,
-    metadata: {},
-  })}\n\n`;
-}
-
 // Handle SSE streaming generate content (model inference)
 async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Http2ServerResponse, body: Buffer): Promise<void> {
   let request: any;
   try {
     request = JSON.parse(body.toString('utf-8'));
   } catch {
-    await forwardToGoogle(req, res, body);
+    // JSON parse failed — return error (can't forward since body was already consumed)
+    logger.error('Failed to parse request body');
+    if (!res.headersSent) {
+      res.writeHead(400, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: { message: 'Invalid request body', code: 400 } }));
+    }
     return;
   }
 
@@ -316,7 +353,9 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
   if (blockCheck.blocked) {
     logger.warn(`BLOCKED: ${model} — ${blockCheck.reason}`);
     res.writeHead(403, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ error: { message: `Request blocked: ${blockCheck.reason}`, code: 403 } }));
+    const err = new Error(`Request blocked: ${blockCheck.reason}`);
+    (err as any).code = 'BLOCKED';
+    res.end(JSON.stringify(formatErrorResponse(err)));
     return;
   }
 
@@ -325,27 +364,35 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
   if (!rateCheck.allowed) {
     logger.warn(`RATE LIMITED: global limit exceeded`);
     res.writeHead(429, { 'content-type': 'application/json', 'retry-after': String(rateCheck.retryAfter) });
-    res.end(JSON.stringify({ error: { message: `Rate limit exceeded. Retry after ${rateCheck.retryAfter}s`, code: 429 } }));
+    const err = new Error(`Rate limit exceeded. Retry after ${rateCheck.retryAfter}s`);
+    (err as any).code = 'RATE_LIMITED';
+    res.end(JSON.stringify(formatErrorResponse(err)));
     return;
   }
 
   // Strip massive inline context and inject agent-context.md reference
-  const contents = stripInlineContext(inner.contents || []);
-  // Wrap any tool result whose target file is the agent-context.md itself,
-  // so the LLM does not extract path/prose as authoritative runtime state.
-  wrapContextFileToolResults(contents, AGENT_CONTEXT_PATH);
-  const systemInstruction = stripSystemContext(inner.system_instruction?.parts?.[0]?.text || '');
+  // (unless passthrough mode is enabled — see Config tab > Context Strip Mode)
+  const isPassthrough = config.contextStripMode === 'passthrough';
+  const contents = isPassthrough
+    ? (inner.contents || [])
+    : stripInlineContext(inner.contents || []);
+  // Wrap any tool result whose target file is the agent-context.md itself
+  if (!isPassthrough) {
+    wrapContextFileToolResults(contents, AGENT_CONTEXT_PATH);
+  }
+  // Antigravity sends "systemInstruction" (camelCase) — try both snake_case and camelCase
+  const rawSystemText = inner.system_instruction?.parts?.[0]?.text
+    || inner.systemInstruction?.parts?.[0]?.text
+    || '';
+  const systemInstruction = isPassthrough
+    ? rawSystemText
+    : stripSystemContext(rawSystemText);
 
   const bodyStr = body.toString('utf-8');
   logger.info(`>>> INTERCEPTED: ${req.url} model=${model}`, {
     model, contentCount: contents.length, hasTools: tools.length > 0,
-    bodySnippet: bodyStr.substring(0, 500),
+    bodySnippet: bodyStr.substring(0, 200),
   });
-  // DEBUG: log full body once to see Antigravity's tool format
-  if (!process.env._LOGGED_FULL_BODY) {
-    process.env._LOGGED_FULL_BODY = '1';
-    logger.info(`FULL BODY: ${bodyStr}`);
-  }
 
   // Estimate prompt tokens from input
   const promptText = JSON.stringify(request);
@@ -359,15 +406,47 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
     mapped.tools = mappedTools;
   }
 
+  // Inject context BEFORE counting tokens so dashboard shows actual usage
+  injectContext(mapped, config.contextStripMode);
+
+  // Calculate actual tokens being sent to provider (post-stripping + post-injection)
+  const actualPromptText = JSON.stringify({ system: mapped.system, messages: mapped.messages, tools: mapped.tools });
+  const actualPromptTokens = estTokens(actualPromptText);
+
+  // Diagnostic: log token breakdown
+  const systemTokens = mapped.system ? Math.round(mapped.system.length / 4) : 0;
+  const toolsJson = mapped.tools ? JSON.stringify(mapped.tools) : '';
+  const toolsTokens = Math.round(toolsJson.length / 4);
+  const contentsJson = JSON.stringify(mapped.messages);
+  const contentsTokens = Math.round(contentsJson.length / 4);
+  const toolCount = mapped.tools ? Object.keys(mapped.tools).length : 0;
+  logger.info(`[token-breakdown] system: ${systemTokens} tokens, tools: ${toolsTokens} tokens (${toolCount} tools), contents: ${contentsTokens} tokens, total input: ~${systemTokens + toolsTokens + contentsTokens} tokens`);
+
+  // Inject saved reasoning_content from previous round (client strips thought:true parts)
+  const convId = extractConvId(request.requestId);
+  injectReasoning(mapped.messages, convId);
+
+  // Inject stored session_id for OpenCode Go context cache discounts
+  const storedSessionId = getSessionId(convId);
+  if (storedSessionId) {
+    if (!mapped.providerOptions) mapped.providerOptions = {};
+    (mapped.providerOptions as any).sessionId = storedSessionId;
+    logger.info(`  Session cache hit: ${storedSessionId.substring(0, 12)}...`);
+  }
+
   logger.info(`  Provider priority: ${config.providerPriority.join(', ')}`);
 
   const responseId = genGoogleId();
   const traceId = genTraceId();
 
+  // Incoming record: log the prompt + the user-requested model.
+  // resolvedModel is intentionally empty here — we don't know the resolved
+  // model until the router picks a provider. The "outgoing" record below
+  // sets the real resolvedModel.
   requestStore.push({
-    id: responseId, timestamp: new Date().toISOString(), model, resolvedModel: model,
+    id: responseId, timestamp: new Date().toISOString(), model, resolvedModel: '',
     direction: 'incoming', type: 'text', content: `Prompt: ${promptText.substring(0, 500)}${promptText.length > 500 ? '...' : ''}`,
-    promptTokens,
+    promptTokens: actualPromptTokens,
   });
 
   res.writeHead(200, {
@@ -377,9 +456,22 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
     'x-goog-api-version': '2',
   });
 
+  // AbortController: when the client disconnects (stop button, tab close),
+  // the HTTP/2 stream fires 'close'/'aborted'. We propagate the abort signal
+  // through to every provider fetch so they cancel immediately.
+  const abortController = new AbortController();
+  req.on('close', () => abortController.abort());
+  req.on('aborted', () => abortController.abort());
+  // Also handle HTTP/1.1 close if the connection drops
+  res.on('close', () => abortController.abort());
+
   const genStart = Date.now();
+  // B12: declared outside the try so the catch handler can read it.
+  // The loop body assigns the most recently attempted provider from each
+  // 'attempt' chunk; on failure the catch uses it for rate-limit accounting.
+  let lastAttemptedProvider = '';
   try {
-    const generator = streamResponse(mapped, model);
+    const generator = streamResponse(mapped, model, abortController.signal);
     let fullText = '';
     let thoughtText = '';
     const toolCalls: { name: string; args: Record<string, unknown> }[] = [];
@@ -387,10 +479,15 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
     let usedProvider = '';
     let usedModel = '';
     const failoverEvents: any[] = [];
+    let capturedSessionId: string | undefined = storedSessionId;
 
     for await (const chunk of generator) {
+      // If client disconnected mid-stream, stop iterating
+      if (abortController.signal.aborted) break;
       const ctype = (chunk as any).type as string;
       if (ctype === 'attempt') {
+        const ap = (chunk as any).provider as string;
+        if (ap) lastAttemptedProvider = ap;
         failoverEvents.push({ provider: (chunk as any).provider, model: (chunk as any).resolvedModel, attempt: (chunk as any).attempt, status: (chunk as any).status });
         continue;
       }
@@ -403,28 +500,33 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
           throw new Error(`Request blocked: ${resolvedCheck.reason}`);
         }
       }
+      // Capture session_id from OpenCode Go streaming response for cache reuse
+      const sid = (chunk as any).sessionId;
+      if (sid && !capturedSessionId) {
+        capturedSessionId = sid;
+      }
       if (ctype === 'text') {
         const c = (chunk as any).content as string || '';
         fullText += c;
         // Send only the delta — Google's client concatenates text from each event
         const deltaParts: any[] = [{ text: c }];
         const outTokens = estTokens(fullText + thoughtText);
-        res.write(`data: ${JSON.stringify({
+        safeWrite(res, `data: ${JSON.stringify({
           response: {
             candidates: [{
               index: 0, content: { role: 'model', parts: deltaParts },
               safetyRatings: SAFETY_RATINGS, groundingMetadata: GROUNDING_METADATA,
             }],
-            usageMetadata: { promptTokenCount: promptTokens, candidatesTokenCount: outTokens, totalTokenCount: promptTokens + outTokens },
+            usageMetadata: { promptTokenCount: actualPromptTokens, candidatesTokenCount: outTokens, totalTokenCount: actualPromptTokens + outTokens },
             modelVersion: `${projectPath}/publishers/${config.provider}/models/${model}`,
             responseId,
           }, traceId, metadata: {},
-        })}\n\n`, 'utf-8');
+        })}\n\n`);
       } else if (ctype === 'thought') {
         const c = (chunk as any).content as string || '';
         thoughtText += c;
         const deltaParts: any[] = [{ thought: true, text: c }];
-        res.write(`data: ${JSON.stringify({
+        safeWrite(res, `data: ${JSON.stringify({
           response: {
             candidates: [{
               index: 0, content: { role: 'model', parts: deltaParts },
@@ -433,7 +535,7 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
             modelVersion: `${projectPath}/publishers/${config.provider}/models/${model}`,
             responseId,
           }, traceId, metadata: {},
-        })}\n\n`, 'utf-8');
+        })}\n\n`);
       } else if (ctype === 'tool-call') {
         toolCalls.push({ name: (chunk as any).name, args: (chunk as any).args });
       }
@@ -441,8 +543,17 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
 
     const duration = Date.now() - genStart;
     const outputTokens = estTokens(fullText + thoughtText);
-    const cost = usedProvider ? calculateCost(usedProvider, usedModel || model, promptTokens, outputTokens) : 0;
+    const cost = usedProvider ? calculateCost(usedProvider, usedModel || model, actualPromptTokens, outputTokens) : 0;
     recordRequest(usedProvider);
+
+    // Save reasoning_content for this conversation so it can be injected on the next request
+    if (thoughtText) saveReasoning(convId, thoughtText);
+
+    // Store session_id from OpenCode Go response for context cache on next turn
+    if (capturedSessionId && capturedSessionId !== storedSessionId) {
+      setSessionId(convId, capturedSessionId);
+      logger.info(`  Session cached: ${capturedSessionId.substring(0, 12)}...`);
+    }
 
     // Send final event with finishReason and metadata (no text — already streamed incrementally)
     const finalParts: any[] = [];
@@ -453,15 +564,19 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
       safetyRatings: SAFETY_RATINGS, groundingMetadata: GROUNDING_METADATA,
       finishReason: 'STOP',
     };
-    res.write(`data: ${JSON.stringify({
-      response: {
-        candidates: [candidate],
-        usageMetadata: { promptTokenCount: promptTokens, candidatesTokenCount: outputTokens, totalTokenCount: promptTokens + outputTokens },
-        modelVersion: `${projectPath}/publishers/${config.provider}/models/${model}`,
-        responseId,
-      }, traceId, metadata: {},
-    })}\n\n`, 'utf-8');
-    res.end();
+    try {
+      safeWrite(res, `data: ${JSON.stringify({
+        response: {
+          candidates: [candidate],
+          usageMetadata: { promptTokenCount: actualPromptTokens, candidatesTokenCount: outputTokens, totalTokenCount: actualPromptTokens + outputTokens },
+          modelVersion: `${projectPath}/publishers/${config.provider}/models/${model}`,
+          responseId,
+        }, traceId, metadata: {},
+      })}\n\n`);
+      res.end();
+    } catch {
+      // Stream already closed — nothing to do
+    }
 
     if (toolCalls.length > 0) {
       logger.info(`<<< Completed: ${req.url} (${fullText.length} chars, ${toolCalls.length} tool calls)`, { toolCalls: toolCalls.map(tc => ({ name: tc.name, args: tc.args })) });
@@ -469,21 +584,38 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
         id: responseId, timestamp: new Date().toISOString(), model, resolvedModel: usedModel || model,
         provider: usedProvider, direction: 'outgoing', type: 'tool-call', content: fullText,
         toolCalls: toolCalls.map(tc => ({ name: tc.name, args: tc.args })),
-        promptTokens, outputTokens, cost, duration, failoverEvents: JSON.stringify(failoverEvents),
+        promptTokens: actualPromptTokens, outputTokens, cost, duration, failoverEvents: JSON.stringify(failoverEvents),
       });
     } else {
       logger.info(`<<< Completed: ${req.url} (${fullText.length} chars, model: ${model}, provider: ${usedProvider})`);
       requestStore.push({
         id: responseId, timestamp: new Date().toISOString(), model, resolvedModel: usedModel || model,
         provider: usedProvider, direction: 'outgoing', type: 'text', content: fullText,
-        promptTokens, outputTokens, cost, duration, failoverEvents: JSON.stringify(failoverEvents),
+        promptTokens: actualPromptTokens, outputTokens, cost, duration, failoverEvents: JSON.stringify(failoverEvents),
       });
     }
   } catch (err: any) {
+    // If the client disconnected (user clicked stop), abort the response silently.
+    // Do NOT send an error event — the UI already closed the connection.
+    if (abortController.signal.aborted || err.name === 'AbortError') {
+      logger.info(`<<< Aborted by client: ${req.url}`);
+      if (lastAttemptedProvider) recordRequest(lastAttemptedProvider);
+      requestStore.push({
+        id: responseId, timestamp: new Date().toISOString(), model, resolvedModel: '',
+        direction: 'outgoing', type: 'error', content: 'Aborted by client',
+        error: 'client_abort', duration: Date.now() - genStart,
+      });
+      return; // Don't try to write to a closed stream
+    }
+
     logger.error(`<<< Error: ${req.url}`, { error: err.message });
+    // B12: account for the failed request in the rate limiter too. Without
+    // this, a flood of failing requests from the same provider would never
+    // trip the per-provider rate limit.
+    if (lastAttemptedProvider) recordRequest(lastAttemptedProvider);
     requestStore.push({
-        id: responseId, timestamp: new Date().toISOString(), model, resolvedModel: model,
-        direction: 'outgoing', type: 'error', content: '',
+        id: responseId, timestamp: new Date().toISOString(), model, resolvedModel: '',
+      direction: 'outgoing', type: 'error', content: '',
       error: err.message, duration: Date.now() - genStart,
     });
     const errResp = JSON.stringify({
@@ -498,16 +630,19 @@ async function handleStreamGenerate(req: http2.Http2ServerRequest, res: http2.Ht
       traceId,
       error: { message: err.message, code: 503 },
     });
-    res.write(`data: ${errResp}\n\n`);
-    res.end();
+    try {
+      safeWrite(res, `data: ${errResp}\n\n`);
+      res.end();
+    } catch {
+      // Stream already closed — nothing to do
+    }
   }
 }
 
-// Forward any request to real Google
+// Forward any request to real Google — streaming, no body buffering
 async function forwardToGoogle(
   req: http2.Http2ServerRequest,
   res: http2.Http2ServerResponse,
-  body: Buffer,
 ): Promise<void> {
   const url = req.url || '/';
   const method = req.method || 'GET';
@@ -524,20 +659,42 @@ async function forwardToGoogle(
   h1Headers['host'] = hostname;
 
   const proxyReq = https.request(
-    { hostname: backendIp, port: 443, path: url, method, servername: hostname, rejectUnauthorized: true, headers: h1Headers },
+    {
+      hostname: backendIp,
+      port: 443,
+      path: url,
+      method,
+      servername: hostname,
+      rejectUnauthorized: true,
+      headers: h1Headers,
+      // Disable response buffering for streaming
+      timeout: config.requestTimeoutMs,
+    },
     (proxyRes) => {
       const fwdHeaders: Record<string, string> = {};
       for (const [k, v] of Object.entries(proxyRes.headers)) fwdHeaders[k] = Array.isArray(v) ? v.join(', ') : String(v);
       res.writeHead(proxyRes.statusCode || 200, fwdHeaders);
-      proxyRes.pipe(res);
+
+      // Stream response — do NOT pipe (pipe buffers). Forward chunk by chunk.
+      proxyRes.on('data', (chunk: Buffer) => {
+        res.write(chunk);
+      });
+      proxyRes.on('end', () => { res.end(); });
+      proxyRes.on('error', (err) => {
+        logger.error('Forward response error', { url, error: err.message });
+        if (!res.writableEnded) res.end();
+      });
     },
   );
+
+  // Stream request body — do NOT collect first
   proxyReq.on('error', (err) => {
     logger.error('Forward error', { url, error: err.message });
     if (!res.headersSent) { res.writeHead(502); res.end(`Proxy error: ${err.message}`); }
   });
-  if (body.length > 0) proxyReq.write(body);
-  proxyReq.end();
+
+  // Pipe request body directly (streaming, no buffering)
+  req.pipe(proxyReq);
 }
 
 // Main TLS handler
@@ -548,17 +705,16 @@ async function handleTlsRequest(req: http2.Http2ServerRequest, res: http2.Http2S
   logger.info(`>>> ${method} ${url}`);
 
   try {
-    // Collect body for POST
-    let body: Buffer = Buffer.alloc(0);
-    if (method === 'POST') {
-      const chunks: Buffer[] = [];
-      for await (const chunk of req) chunks.push(chunk as Buffer);
-      body = Buffer.concat(chunks);
-    }
-
     // Check if this is a model inference call we should intercept
     const pathOnly = url.split('?')[0];
     if (INTERCEPT_PATHS.has(pathOnly)) {
+      // Intercept: collect body for transformation
+      let body: Buffer = Buffer.alloc(0);
+      if (method === 'POST') {
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) chunks.push(chunk as Buffer);
+        body = Buffer.concat(chunks);
+      }
       const req2 = { ...req, url, method } as any;
       // Re-create a readable stream from body for the handler
       const { Readable } = await import('stream');
@@ -571,8 +727,9 @@ async function handleTlsRequest(req: http2.Http2ServerRequest, res: http2.Http2S
       Object.assign(fakeReq, { headers: req.headers, url, method });
       await handleStreamGenerate(fakeReq as any, res, body);
     } else {
+      // Forward: stream directly, no body buffering
       logger.debug(`  PASS ${method} ${url}`);
-      await forwardToGoogle(req, res, body);
+      await forwardToGoogle(req, res);
     }
   } catch (error: any) {
     logger.error('Handler error', { url, error: error.message });
@@ -582,7 +739,19 @@ async function handleTlsRequest(req: http2.Http2ServerRequest, res: http2.Http2S
 
 // Main
 async function main(): Promise<void> {
+  // Install agent-context.md to ~/.antigravity/ for stable global access.
+  // This runs every startup but the hash-based marker ensures the file is
+  // only actually copied when the content changes (proxy upgrade).
+  // The env var is set so downstream consumers (antigravity-context.ts,
+  // workspace-context.ts) resolve to the global path.
+  const installedPath = installAgentContext(AGENT_CONTEXT_PATH);
+  if (installedPath) {
+    AGENT_CONTEXT_PATH = installedPath;
+    process.env.AGENT_CONTEXT_PATH = installedPath;
+  }
+
   db.init();
+  db.clearLogs();
   setRateLimitConfig({ globalMax: config.rateLimitGlobal, providerMax: config.rateLimitProvider, windowMs: config.rateLimitWindow });
   logger.info(`=== Antigravity Proxy (${config.provider}) ===`);
 
@@ -596,9 +765,17 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // HTTP server on port 4040 (dashboard + language_server init calls)
-  const restServer = http.createServer(port4040Handler);
-  restServer.on('error', (err) => logger.error('Port 4040 server error', { error: err.message }));
+  // HTTP server on port 4000 (dashboard + language_server init calls)
+  const restServer = http.createServer(port4000Handler);
+  restServer.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      logger.error(`Port ${config.apiPort} already in use. Kill the old process or set API_PORT in .env`);
+    } else if (err.code === 'EACCES') {
+      logger.error(`Port ${config.apiPort} requires elevated privileges. Run with sudo (macOS/Linux) or as Administrator (Windows)`);
+    } else {
+      logger.error('Dashboard server error', { error: err.message });
+    }
+  });
   restServer.listen(config.apiPort, '0.0.0.0', () => {
     logger.info(`Port ${config.apiPort} (HTTP) → Dashboard + init calls`);
     logger.info(`Dashboard: http://localhost:${config.apiPort}`);
@@ -610,16 +787,38 @@ async function main(): Promise<void> {
 
   if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
     const tlsServer = http2.createSecureServer(
-      { cert: fs.readFileSync(certPath), key: fs.readFileSync(keyPath), allowHTTP1: true },
+      {
+        cert: fs.readFileSync(certPath),
+        key: fs.readFileSync(keyPath),
+        allowHTTP1: true,
+        // Optimize for streaming: small initial window, no push, enable padding control
+        settings: {
+          enablePush: false,
+          initialWindowSize: 65535,       // 64KB initial window (default is 64KB)
+          maxFrameSize: 16384,            // 16KB frames (smaller = lower latency)
+          headerTableSize: 4096,
+          maxConcurrentStreams: 100,
+        },
+      },
       handleTlsRequest,
     );
     tlsServer.on('sessionError', (err) => logger.debug('TLS session error', { error: err.message }));
-    tlsServer.on('error', (err) => logger.error('TLS server error', { error: err.message }));
+    tlsServer.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        logger.error(`Port ${config.proxyPort} already in use. Kill the old process or set PROXY_PORT in .env`);
+      } else if (err.code === 'EACCES') {
+        logger.error(`Port ${config.proxyPort} requires elevated privileges.`);
+        logger.error('  macOS/Linux: run with sudo, or use authbind, or set PROXY_PORT=8443 in .env');
+        logger.error('  Windows: run PowerShell as Administrator');
+      } else {
+        logger.error('TLS server error', { error: err.message });
+      }
+    });
     tlsServer.listen(config.proxyPort, '0.0.0.0', () => {
       logger.info(`Port ${config.proxyPort} (HTTPS) → Intercept: [${Array.from(INTERCEPT_PATHS).join(', ')}]`);
     });
   } else {
-    logger.warn('TLS certs missing - run: node scripts/gen-certs.mjs');
+    logger.warn('TLS certs missing — run: node scripts/gen-certs.mjs');
   }
 
   logger.info(`${config.provider}: ${config.baseUrl}`);

@@ -2,13 +2,27 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logger } from './logger.js';
+import { migrateConfig } from './cli/utils/config-migration.js';
 import type { ProviderConfig, ProviderId } from './adapter.js';
 import type { LocalProviderInfo } from './local-discovery.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ENV_PATH = path.resolve(__dirname, '..', '.env');
+
+// Migrate config to user home and use that path
+const ENV_PATH = migrateConfig();
 
 dotenv.config({ path: ENV_PATH });
+
+const VALID_CONTEXT_STRIP_MODES = ['passthrough', 'strip', 'lite'];
+
+function validateContextStripMode(value: string): 'strip' | 'passthrough' {
+  if (VALID_CONTEXT_STRIP_MODES.includes(value)) {
+    return value as 'strip' | 'passthrough';
+  }
+  logger.warn(`Invalid CONTEXT_STRIP_MODE '${value}', defaulting to 'passthrough'`);
+  return 'passthrough';
+}
 
 export type Provider = 'nvidia' | 'openrouter';
 
@@ -17,14 +31,21 @@ function parsePriority(): ProviderId[] {
   return raw.length > 0 ? raw : ['openrouter', 'nvidia'];
 }
 
+const ENV_KEY_OVERRIDES: Partial<Record<ProviderId, { apiKey?: string; baseUrl?: string }>> = {
+  zen: { apiKey: 'OPENCODE_API_KEY', baseUrl: 'OPENCODE_BASE_URL' },
+};
+
 function buildProviders(priority: ProviderId[], localConfigs?: ProviderConfig[]): ProviderConfig[] {
   const fromPriority: ProviderConfig[] = priority.map((id, idx) => {
-    const envKey = id.toUpperCase();
+    const override = ENV_KEY_OVERRIDES[id];
+    const envKey = id.toUpperCase().replace(/-/g, '_');
+    const apiKeyEnv = override?.apiKey || `${envKey}_API_KEY`;
+    const baseUrlEnv = override?.baseUrl || `${envKey}_BASE_URL`;
     return {
       id,
       priority: idx,
-      apiKey: process.env[`${envKey}_API_KEY`] || undefined,
-      baseUrl: process.env[`${envKey}_BASE_URL`] || undefined,
+      apiKey: process.env[apiKeyEnv] || undefined,
+      baseUrl: process.env[baseUrlEnv] || undefined,
       enabled: true,
     };
   });
@@ -50,7 +71,7 @@ function createConfig() {
   let localProviders: ProviderConfig[] = [];
 
   return {
-    legacyProvider: (process.env.PROVIDER || 'openrouter') as Provider,
+    legacyProvider: (process.env.PROVIDER || parsePriority()[0] || 'openrouter') as Provider,
     nvidiaApiKey: process.env.NVIDIA_API_KEY || '',
     nvidiaBaseUrl: process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1',
     openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
@@ -62,12 +83,14 @@ function createConfig() {
     logLevel: process.env.LOG_LEVEL || 'info',
     retries: parseInt(process.env.PROXY_RETRIES || '10', 10),
     backoffMs: parseInt(process.env.PROXY_BACKOFF_MS || '1000', 10),
+    requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS || '300000', 10),
     rateLimitGlobal: parseInt(process.env.RATE_LIMIT_GLOBAL || '60', 10),
     rateLimitProvider: parseInt(process.env.RATE_LIMIT_PROVIDER || '30', 10),
     rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
     dashboardUser: process.env.DASHBOARD_USER || '',
     dashboardPassword: process.env.DASHBOARD_PASSWORD || '',
     failoverWebhookUrl: process.env.FAILOVER_WEBHOOK_URL || '',
+    contextStripMode: validateContextStripMode(process.env.CONTEXT_STRIP_MODE || 'passthrough'),
     providerPriority: parsePriority(),
     providers: buildProviders(parsePriority()),
     get localProviders(): ProviderConfig[] { return localProviders; },
@@ -83,7 +106,14 @@ function createConfig() {
       this.providers = buildProviders(this.providerPriority, localProviders);
     },
     get isConfigured(): boolean {
-      return this.providers.some((p: ProviderConfig) => !!p.apiKey);
+      return this.providers.some((p: ProviderConfig) => {
+        if (!p.apiKey) return false;
+        const key = p.apiKey.trim();
+        if (key.length < 10) return false;
+        // Filter out placeholder values from .env.example
+        if (/\.\.\.$/.test(key)) return false;
+        return true;
+      });
     },
     get provider(): string {
       return this.legacyProvider;
@@ -96,7 +126,7 @@ function createConfig() {
     },
     reload(): void {
       parseEnvFile();
-      this.legacyProvider = (process.env.PROVIDER || 'openrouter') as Provider;
+      this.legacyProvider = (process.env.PROVIDER || parsePriority()[0] || 'openrouter') as Provider;
       this.nvidiaApiKey = process.env.NVIDIA_API_KEY || '';
       this.nvidiaBaseUrl = process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1';
       this.openrouterApiKey = process.env.OPENROUTER_API_KEY || '';
@@ -108,12 +138,14 @@ function createConfig() {
       this.logLevel = process.env.LOG_LEVEL || 'info';
       this.retries = parseInt(process.env.PROXY_RETRIES || '10', 10);
       this.backoffMs = parseInt(process.env.PROXY_BACKOFF_MS || '1000', 10);
+      this.requestTimeoutMs = parseInt(process.env.REQUEST_TIMEOUT_MS || '300000', 10);
       this.rateLimitGlobal = parseInt(process.env.RATE_LIMIT_GLOBAL || '60', 10);
       this.rateLimitProvider = parseInt(process.env.RATE_LIMIT_PROVIDER || '30', 10);
       this.rateLimitWindow = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10);
       this.dashboardUser = process.env.DASHBOARD_USER || '';
       this.dashboardPassword = process.env.DASHBOARD_PASSWORD || '';
       this.failoverWebhookUrl = process.env.FAILOVER_WEBHOOK_URL || '';
+      this.contextStripMode = validateContextStripMode(process.env.CONTEXT_STRIP_MODE || 'passthrough');
       this.providerPriority = parsePriority();
       this.providers = buildProviders(this.providerPriority, localProviders);
     },

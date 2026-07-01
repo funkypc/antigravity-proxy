@@ -1,27 +1,50 @@
 {
-  "name": "antigravity-proxy",
-  "version": "1.0.0",
-  "description": "Proxy translating Antigravity Google API calls to NVIDIA/OpenRouter via OpenAI-compatible API",
+  "name": "@12errh/antigravity-proxy",
+  "version": "1.0.5",
+  "description": "LLM proxy for Antigravity — translate Google Gemini API calls to any provider",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "bin": {
+    "antigravity": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "src/",
+    "dashboard/",
+    "scripts/",
+    "README.md",
+    "agent-context.md",
+    "models.json",
+    "pricing.json",
+    ".env.example",
+    "tsconfig.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "tsx src/index.ts",
+    "start:prod": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test/run.ts",
+    "gen-certs": "node scripts/gen-certs.mjs",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.14.4",
-    "@grpc/proto-loader": "^0.8.1",
     "ai": "^6.0.193",
     "better-sqlite3": "^12.10.0",
-    "undici": "^7.7.0",
+    "commander": "^15.0.0",
     "dotenv": "^17.4.2",
-    "node-forge": "^1.4.0"
+    "node-forge": "^1.4.0",
+    "undici": "^7.7.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.9.1",
+    "@types/node": "^22.10.0",
     "tsx": "^4.22.3",
-    "typescript": "^6.0.3"
+    "typescript": "^5.7.0"
   }
 }

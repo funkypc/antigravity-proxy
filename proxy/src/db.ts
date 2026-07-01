@@ -4,16 +4,28 @@ import { fileURLToPath } from 'url';
 import { createRequire } from 'node:module';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbDir = path.resolve(__dirname, '..', 'data');
-if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
-const dbPath = path.join(dbDir, 'proxy.db');
 
-// @ts-ignore - better-sqlite3 types conflict with ESM declaration emit
-const _require = createRequire(import.meta.url);
-const Database = _require('better-sqlite3');
-const db = new Database(dbPath);
-db.pragma('journal_mode = WAL');
-db.pragma('synchronous = NORMAL');
+// Try to load better-sqlite3. If the native module isn't compiled
+// (e.g. CI with --ignore-scripts on Windows), all DB functions become
+// no-ops so the rest of the app can still load without crashing.
+let db: any = null;
+try {
+  const dbDir = path.resolve(__dirname, '..', 'data');
+  if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+  const dbPath = path.join(dbDir, 'proxy.db');
+  // @ts-ignore - better-sqlite3 types conflict with ESM declaration emit
+  const _require = createRequire(import.meta.url);
+  const Database = _require('better-sqlite3');
+  db = new Database(dbPath);
+  db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
+} catch {
+  // Native module not available — provide a safe no-op stub so callers
+  // can import db.ts without crashing (important for CI tests).
+  // NOTE: Cannot use logger here — logger.ts imports db.ts, creating a circular dependency.
+  const noop = { run: () => ({}), get: () => null, all: () => [], lastInsertRowid: 0 };
+  db = { exec: () => {}, prepare: () => noop, pragma: () => {} };
+}
 
 export function init(): void {
   db.exec(`
@@ -236,6 +248,109 @@ export function getStats(todayOnly?: boolean): { totalRequests: number; totalTok
   `).get() as any;
   row.requests = row.totalRequests;
   return row;
+}
+
+/**
+ * Title-generation detection. Antigravity typically calls a small/fast model
+ * to generate a short title at the start of each conversation. We detect this
+ * by aggregating per-model request stats and flagging models whose requests
+ * consistently show:
+ *   - low output_tokens (< 100) — titles are short
+ *   - low cost (median < $0.001) — small/cheap model
+ *   - low prompt_tokens median (< 1500) — short prompt
+ *   - no tool calls
+ *   - enough sample size (>= 3) to avoid false positives
+ *
+ * Returns a map keyed by model name with stats + `likelyTitleGen` boolean.
+ * The user can also pin/unpin a model via the dashboard; pinned models always
+ * return `pinned: true` regardless of stats.
+ */
+export interface ModelFlagInfo {
+  model: string;
+  requests: number;
+  median_output: number;
+  median_prompt: number;
+  median_cost: number;
+  has_tool_calls: boolean;
+  likelyTitleGen: boolean;
+  pinned: boolean;
+  reason: string;
+}
+
+const SMALL_MODEL_TOKENS = new Set(['mini', 'flash', 'lite', 'haiku', 'nano', 'small', 'tiny', 'air']);
+
+function isSmallModelName(name: string): boolean {
+  const lower = name.toLowerCase();
+  for (const t of SMALL_MODEL_TOKENS) if (lower.includes(t)) return true;
+  return false;
+}
+
+export function getModelFlags(): ModelFlagInfo[] {
+  // Pinned flags live in a small KV table
+  try { db.exec(`CREATE TABLE IF NOT EXISTS model_flags (model TEXT PRIMARY KEY, pinned INTEGER NOT NULL, note TEXT, updated_at TEXT)`); } catch {}
+
+  // Aggregate per-model stats
+  const rows = db.prepare(`
+    SELECT model,
+           COUNT(*) as requests,
+           COALESCE(AVG(output_tokens), 0) as avg_output,
+           COALESCE(AVG(prompt_tokens), 0) as avg_prompt,
+           COALESCE(AVG(cost), 0) as avg_cost,
+           COALESCE(SUM(CASE WHEN tool_calls IS NOT NULL AND tool_calls != '' THEN 1 ELSE 0 END), 0) as tool_call_count
+    FROM requests
+    WHERE direction = 'outgoing' AND model IS NOT NULL AND model != ''
+    GROUP BY model
+  `).all() as any[];
+
+  const pinned = new Map<string, { pinned: boolean; note: string }>();
+  try {
+    for (const p of db.prepare(`SELECT model, pinned, note FROM model_flags`).all() as any[]) {
+      pinned.set(p.model, { pinned: !!p.pinned, note: p.note || '' });
+    }
+  } catch {}
+
+  return rows.map(r => {
+    const requests = Number(r.requests) || 0;
+    const avgOutput = Number(r.avg_output) || 0;
+    const avgPrompt = Number(r.avg_prompt) || 0;
+    const avgCost = Number(r.avg_cost) || 0;
+    const hasToolCalls = (Number(r.tool_call_count) || 0) > 0;
+    const smallName = isSmallModelName(r.model);
+
+    // Heuristic: short outputs, cheap, small-model name, no tool calls
+    const likelyTitleGen = requests >= 3
+      && avgOutput > 0 && avgOutput < 100
+      && avgCost < 0.001
+      && avgPrompt < 1500
+      && !hasToolCalls
+      && smallName;
+
+    const pin = pinned.get(r.model);
+    const pinnedFlag = pin ? pin.pinned : false;
+    let reason = '';
+    if (pinnedFlag) reason = 'Pinned by user';
+    else if (likelyTitleGen) reason = `Auto: avg ${Math.round(avgOutput)} tok out, ~$${avgCost.toFixed(5)}/req, no tools`;
+    else if (smallName && hasToolCalls) reason = 'Small model but uses tools';
+    else reason = 'Not detected';
+
+    return {
+      model: r.model,
+      requests,
+      median_output: Math.round(avgOutput),
+      median_prompt: Math.round(avgPrompt),
+      median_cost: avgCost,
+      has_tool_calls: hasToolCalls,
+      likelyTitleGen: pinnedFlag || likelyTitleGen,
+      pinned: pinnedFlag,
+      reason,
+    };
+  }).sort((a, b) => b.requests - a.requests);
+}
+
+export function setModelFlag(model: string, pinned: boolean, note = ''): void {
+  try { db.exec(`CREATE TABLE IF NOT EXISTS model_flags (model TEXT PRIMARY KEY, pinned INTEGER NOT NULL, note TEXT, updated_at TEXT)`); } catch {}
+  db.prepare(`INSERT OR REPLACE INTO model_flags (model, pinned, note, updated_at) VALUES (?, ?, ?, ?)`)
+    .run(model, pinned ? 1 : 0, note, new Date().toISOString());
 }
 
 

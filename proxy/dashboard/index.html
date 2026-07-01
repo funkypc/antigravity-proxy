@@ -5,402 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Antigravity Proxy</title>
 <link rel="icon" href="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png">
-<style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
-
-:root {
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --surface2: #1a1a26;
-  --surface3: #22223a;
-  --border: rgba(124, 58, 237, 0.08);
-  --border2: rgba(255,255,255,0.06);
-  --text: #f1f5f9;
-  --text2: #94a3b8;
-  --text3: #64748b;
-  --accent: #7c3aed;
-  --accent2: #a855f7;
-  --accentDim: rgba(124,58,237,0.12);
-  --green: #22c55e;
-  --greenDim: rgba(34,197,94,0.12);
-  --yellow: #eab308;
-  --yellowDim: rgba(234,179,8,0.12);
-  --red: #ef4444;
-  --redDim: rgba(239,68,68,0.12);
-  --blue: #3b82f6;
-  --radius: 12px;
-  --radiusSm: 8px;
-  --font: -apple-system,'SF Pro','Inter','Segoe UI',sans-serif;
-  --mono: 'SF Mono','Cascadia Code','Fira Code','Consolas',monospace;
-  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadowLg: 0 4px 20px rgba(0,0,0,0.4);
-  --transition: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;display:flex;height:100vh;overflow:hidden;}
-
-/* Scrollbar */
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--text3);border-radius:2px}
-::-webkit-scrollbar-thumb:hover{background:var(--text2)}
-
-/* Sidebar */
-.sidebar{
-  width:240px;background:var(--surface);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;flex-shrink:0;position:relative;
-}
-.sidebar::after{
-  content:'';position:absolute;top:0;right:-1px;width:1px;
-  background:linear-gradient(to bottom, transparent, var(--accentDim), transparent);
-}
-.sidebar-header{
-  padding:20px 20px 16px;display:flex;align-items:center;gap:12px;
-  border-bottom:1px solid var(--border2);
-}
-.sidebar-header .logo-img{border-radius:10px;flex-shrink:0;object-fit:contain;background:transparent;}
-.sidebar-header .logo{
-  width:32px;height:32px;border-radius:10px;
-  background:linear-gradient(135deg, var(--accent), var(--accent2));
-  display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:14px;color:#fff;flex-shrink:0;
-}
-.sidebar-header .brand h1{font-size:14px;font-weight:600;letter-spacing:-0.01em}
-.sidebar-header .brand span{font-size:11px;color:var(--text3);display:block;margin-top:1px}
-
-.nav{padding:12px;flex:1;display:flex;flex-direction:column;gap:2px}
-.nav-item{
-  display:flex;align-items:center;gap:10px;padding:10px 12px;
-  border-radius:var(--radiusSm);cursor:pointer;color:var(--text2);
-  transition:all var(--transition);position:relative;overflow:hidden;
-  font-size:13px;font-weight:450;
-}
-.nav-item:hover{background:var(--surface2);color:var(--text);}
-.nav-item.active{background:var(--accentDim);color:var(--accent2);}
-.nav-item.active::before{
-  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
-  width:3px;height:18px;border-radius:0 2px 2px 0;
-  background:var(--accent);transition:all var(--transition);
-}
-.nav-item .icon{width:18px;height:18px;flex-shrink:0;opacity:0.7;}
-.nav-item.active .icon{opacity:1;}
-.nav-item .badge{
-  margin-left:auto;background:var(--accentDim);color:var(--accent2);
-  font-size:11px;padding:1px 7px;border-radius:10px;font-weight:500;
-}
-
-.sidebar-footer{
-display:flex;align-items:center;gap:10px;
-}
-
-/* Collapsed sidebar */
-.sidebar.collapsed{width:56px;}
-.sidebar.collapsed .sidebar-header .brand,
-.sidebar.collapsed .sidebar-footer .footer-info,
-.sidebar.collapsed .nav-item span,
-.sidebar.collapsed .nav-item .badge,
-.sidebar.collapsed .sidebar-toggle span{display:none;}
-.sidebar.collapsed .nav-item{padding:10px;justify-content:center;}
-.sidebar.collapsed .sidebar-header{padding:14px;justify-content:center;}
-.sidebar.collapsed .sidebar-footer{padding:10px;justify-content:center;}
-.sidebar.collapsed .sidebar-toggle{padding:8px;justify-content:center;}
-.sidebar-toggle{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:var(--text3);font-size:11px;border-top:1px solid var(--border2);transition:color 0.15s;}
-.sidebar-toggle:hover{color:var(--text);}
-.sidebar-toggle svg{width:16px;height:16px;flex-shrink:0;}
-.proxy-status-indicator{
-  width:8px;height:8px;border-radius:50%;flex-shrink:0;position:relative;
-}
-.proxy-status-indicator.online{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.4);}
-.proxy-status-indicator.online::after{
-  content:'';position:absolute;inset:-2px;border-radius:50%;
-  border:1px solid rgba(34,197,94,0.3);animation:pulse 2s infinite;
-}
-.proxy-status-indicator.offline{background:var(--text3);}
-@keyframes pulse{0%{transform:scale(1);opacity:1}100%{transform:scale(1.8);opacity:0}}
-.footer-info{flex:1;min-width:0}
-.footer-info .p-status{font-size:12px;font-weight:500}
-.footer-info .p-provider{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
-
-/* Main */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-
-/* Topbar */
-.topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 32px;border-bottom:1px solid var(--border2);
-  background:var(--surface);flex-shrink:0;min-height:60px;
-}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.topbar h2{font-size:16px;font-weight:600;letter-spacing:-0.01em}
-.topbar .subtitle{font-size:12px;color:var(--text3);display:none}
-.topbar-actions{display:flex;gap:8px}
-
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:7px 14px;border-radius:var(--radiusSm);
-  border:1px solid var(--border2);background:var(--surface2);
-  color:var(--text2);font-size:13px;font-family:var(--font);font-weight:450;
-  cursor:pointer;transition:all var(--transition);white-space:nowrap;
-}
-.btn:hover{background:var(--surface3);color:var(--text);border-color:rgba(255,255,255,0.1);}
-.btn:active{transform:scale(0.97)}
-.btn svg{width:14px;height:14px;opacity:0.7}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
-.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);color:#fff;}
-.btn-ghost{border-color:transparent;background:transparent;}
-.btn-ghost:hover{background:var(--surface2);border-color:transparent;}
-.btn-danger{background:var(--redDim);color:var(--red);border-color:transparent;}
-.btn-danger:hover{background:var(--red);color:#fff;}
-.btn-sm{padding:5px 10px;font-size:12px;}
-.btn-icon{padding:6px;border-radius:var(--radiusSm);}
-.btn-icon svg{width:16px;height:16px;}
-
-/* Content area */
-.content{flex:1;overflow-y:auto;padding:28px 32px;}
-.section{display:none;animation:fadeSlide 300ms ease;}
-.section.active{display:block;}
-@keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-/* Stat Cards - Bento grid */
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}
-.stat-card{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:20px;position:relative;overflow:hidden;transition:all var(--transition);
-}
-.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadowLg);border-color:rgba(255,255,255,0.08);}
-.stat-card .icon-wrap{
-  width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
-  margin-bottom:14px;font-size:18px;
-}
-.stat-card .icon-wrap.purple{background:var(--accentDim);color:var(--accent2);}
-.stat-card .icon-wrap.green{background:var(--greenDim);color:var(--green);}
-.stat-card .icon-wrap.yellow{background:var(--yellowDim);color:var(--yellow);}
-.stat-card .icon-wrap.red{background:var(--redDim);color:var(--red);}
-.stat-card .s-label{font-size:12px;color:var(--text3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.04em;}
-.stat-card .s-value{font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;}
-.stat-card .s-sub{font-size:12px;color:var(--text3);margin-top:4px;}
-.stat-card .trend{font-size:12px;font-weight:500;margin-left:8px;}
-
-/* Config cards */
-.config-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
-.info-card{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:20px;transition:all var(--transition);
-}
-.info-card:hover{border-color:rgba(255,255,255,0.08);}
-.info-card .ic-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
-.info-card .ic-value{font-size:15px;font-weight:600;}
-.info-card .ic-sub{font-size:12px;color:var(--text3);margin-top:4px;word-break:break-all;}
-
-/* Env table */
-.env-section{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:20px;margin-bottom:16px;
-}
-.env-section h3{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;}
-
-/* Tables */
-.table-wrap{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);overflow:auto;}
-table{width:100%;border-collapse:collapse;}
-thead{background:var(--surface2);}
-th{
-  text-align:left;padding:10px 14px;font-size:11px;color:var(--text3);
-  font-weight:600;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;
-}
-td{padding:10px 14px;font-size:13px;border-top:1px solid var(--border2);vertical-align:middle;}
-tbody tr{transition:background var(--transition);}
-tbody tr:hover{background:var(--surface2);}
-.td-wrap{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
-.tag{
-  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;
-  font-size:11px;font-weight:500;
-}
-.tag-text{background:var(--accentDim);color:var(--accent2);}
-.tag-tool{background:var(--yellowDim);color:var(--yellow);}
-.tag-error{background:var(--redDim);color:var(--red);}
-.tag-incoming{background:var(--accentDim);color:var(--accent2);}
-.tag-outgoing{background:var(--greenDim);color:var(--green);}
-.tag-both{background:rgba(59,130,246,0.12);color:var(--blue);}
-
-/* Forms */
-.form-section{
-  background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:24px;margin-bottom:16px;
-}
-.form-section h3{
-  font-size:13px;font-weight:600;margin-bottom:20px;color:var(--text);
-  display:flex;align-items:center;gap:8px;
-}
-.form-group{margin-bottom:18px;}
-.form-group:last-child{margin-bottom:0;}
-.form-group label{
-  display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;
-}
-.form-group .hint{font-size:11px;color:var(--text3);margin-top:3px;}
-.form-group input,.form-group select{
-  width:100%;padding:9px 12px;border-radius:var(--radiusSm);
-  border:1px solid var(--border2);background:var(--surface2);
-  color:var(--text);font-size:13px;font-family:var(--font);
-  outline:none;transition:all var(--transition);
-}
-.form-group input:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.form-group input::placeholder{color:var(--text3);}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-
-/* Model editor */
-.model-input{width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--mono);outline:none;transition:all var(--transition);}
-.model-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.model-editor{margin-bottom:12px;}
-.model-row{display:grid;grid-template-columns:1fr 1fr 36px;gap:8px;margin-bottom:8px;align-items:center;}
-.model-row input{
-  padding:7px 10px;border-radius:6px;border:1px solid var(--border2);
-  background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--mono);
-  outline:none;transition:all var(--transition);
-}
-.model-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.model-row .btn-icon{
-  width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-  border-radius:6px;border:1px solid transparent;background:transparent;color:var(--text3);
-  cursor:pointer;transition:all var(--transition);
-}
-.model-row .btn-icon:hover{background:var(--redDim);color:var(--red);border-color:var(--redDim);}
-
-/* Log viewer */
-.log-section{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;}
-.log-bar{
-  display:flex;align-items:center;gap:12px;padding:10px 16px;
-  border-bottom:1px solid var(--border2);background:var(--surface2);
-}
-.log-bar label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:500;}
-.log-bar select{
-  padding:4px 8px;border-radius:4px;border:1px solid var(--border2);
-  background:var(--surface3);color:var(--text2);font-size:12px;outline:none;
-}
-.log-bar .toggle-label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;}
-.log-bar .toggle-label input{accent-color:var(--accent);}
-.log-out{
-  height:420px;overflow-y:auto;padding:14px 16px;
-  font-family:var(--mono);font-size:12px;line-height:1.7;
-}
-.log-e{color:var(--text2);padding:1px 0;border-bottom:1px solid rgba(255,255,255,0.02);}
-.log-e .ts{color:var(--text3);margin-right:10px;}
-.log-e .lvl{display:inline-block;width:46px;font-weight:600;font-size:11px;}
-.log-e .lvl.DEBUG{color:var(--text3)}
-.log-e .lvl.INFO{color:var(--accent2)}
-.log-e .lvl.WARN{color:var(--yellow)}
-.log-e .lvl.ERROR{color:var(--red)}
-
-/* Empty state */
-.empty-state{text-align:center;padding:60px 20px;}
-.empty-state .icon{width:48px;height:48px;margin:0 auto 16px;color:var(--text3);opacity:0.3;}
-.empty-state p{font-size:14px;color:var(--text2);}
-.empty-state .sub{font-size:12px;color:var(--text3);margin-top:4px;}
-
-/* Request detail */
-.req-detail{
-  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radiusSm);
-  padding:16px;margin-top:4px;display:none;
-}
-.req-detail.open{display:table-row;}
-.req-detail-inner{display:block;padding:16px;max-height:70vh;overflow:auto;word-break:break-all;}
-.req-detail h4{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;font-weight:600;}
-.req-detail pre{
-  background:var(--surface);padding:12px;border-radius:6px;font-size:12px;
-  overflow-x:auto;max-height:260px;overflow-y:auto;white-space:pre-wrap;
-  word-break:break-all;border:1px solid var(--border2);color:var(--text2);
-  font-family:var(--mono);line-height:1.6;
-}
-
-/* Filter bar */
-.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
-.filter-bar .search-wrap{position:relative;flex:1;max-width:280px;}
-.filter-bar .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3);}
-.filter-bar .search-wrap input{
-  width:100%;padding:7px 10px 7px 32px;border-radius:var(--radiusSm);
-  border:1px solid var(--border2);background:var(--surface2);color:var(--text);
-  font-size:13px;font-family:var(--font);outline:none;transition:all var(--transition);
-}
-.filter-bar .search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentDim);}
-.filter-bar select{
-  padding:7px 10px;border-radius:var(--radiusSm);border:1px solid var(--border2);
-  background:var(--surface2);color:var(--text2);font-size:12px;outline:none;
-}
-.filter-bar .count{font-size:12px;color:var(--text3);white-space:nowrap;}
-
-/* Pagination */
-.pagination{display:flex;align-items:center;justify-content:center;gap:6px;padding:16px 0 0}
-.pagination .page-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;transition:all var(--transition);font-family:var(--font)}
-.pagination .page-btn:hover{background:var(--surface3);color:var(--text)}
-.pagination .page-btn.active{background:var(--accentDim);color:var(--accent2);border-color:var(--accentDim)}
-.pagination .page-btn:disabled{opacity:0.3;cursor:default}
-.pagination .page-info{font-size:12px;color:var(--text3);padding:0 8px}
-
-/* Date chip */
-.date-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;transition:all var(--transition)}
-.date-chip:hover{background:var(--surface3);color:var(--text)}
-.date-chip.active{background:var(--accentDim);color:var(--accent2);border-color:var(--accentDim)}
-.date-chip .dc-count{font-size:10px;background:var(--surface);padding:1px 5px;border-radius:4px;color:var(--text3)}
-
-/* Toggle */
-.switch{position:relative;width:36px;height:20px;background:var(--surface3);border-radius:10px;cursor:pointer;transition:background var(--transition);flex-shrink:0;}
-.switch.on{background:var(--green);}
-.switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform var(--transition);}
-.switch.on::after{transform:translateX(16px);}
-
-/* Loading skeleton */
-.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* Toast */
-.toast{
-  position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:var(--radiusSm);
-  background:var(--surface2);color:var(--text);font-size:13px;font-weight:450;
-  border:1px solid var(--border2);box-shadow:var(--shadowLg);
-  opacity:0;transform:translateY(16px) scale(0.96);transition:all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index:9999;pointer-events:none;backdrop-filter:blur(12px);
-}
-.toast.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
-.toast.error{border-color:var(--redDim);color:var(--red);}
-
-/* Tooltip */
-[data-tooltip]{position:relative;}
-[data-tooltip]:hover::after{
-  content:attr(data-tooltip);position:absolute;bottom:calc(100% + 6px);left:50%;
-  transform:translateX(-50%);background:var(--surface3);color:var(--text2);
-  font-size:11px;padding:4px 8px;border-radius:4px;white-space:nowrap;
-  border:1px solid var(--border2);z-index:100;pointer-events:none;
-}
-
-  /* Card component for cost charts */
-  .card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:20px;transition:all var(--transition)}
-  .card:hover{border-color:rgba(255,255,255,0.08)}
-  .card-header{font-size:13px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:var(--text)}
-  .card .chart-wrap{position:relative;width:100%;min-height:220px}
-  .card .chart-wrap canvas{width:100%!important}
-  .card .cost-table{font-size:11px;color:var(--text3);margin-top:12px;border-top:1px solid var(--border2);padding-top:10px;max-height:0;overflow:hidden;transition:max-height var(--transition)}
-  .card .cost-table.open{max-height:400px;overflow-y:auto}
-  .card .cost-table table{width:100%;border-collapse:collapse;font-size:11px}
-  .card .cost-table th{padding:3px 6px;text-align:left;color:var(--text3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:0.04em}
-  .card .cost-table td{padding:3px 6px;color:var(--text2);border-top:1px solid var(--border2)}
-  .cost-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
-  .cost-summary .stat-card{padding:16px}
-  .cost-summary .stat-card .s-value{font-size:22px}
-  
-  @media(max-width:900px){
-  .sidebar{width:60px}
-  .sidebar-header .brand,.sidebar-footer .footer-info,.nav-item span{display:none}
-  .nav-item{padding:10px;justify-content:center}
-  .nav-item.active::before{display:none}
-  .nav-item .badge{display:none}
-  .sidebar-header{padding:16px 14px;justify-content:center}
-  .sidebar-footer{padding:14px;justify-content:center}
-  .content{padding:20px 16px}
-  .topbar{padding:14px 20px}
-  .stat-grid{grid-template-columns:repeat(2,1fr)}
-  .config-row{grid-template-columns:1fr}
-  .form-row{grid-template-columns:1fr}
-}
-</style>
+<link rel="stylesheet" href="dashboard.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -408,10 +13,10 @@ tbody tr:hover{background:var(--surface2);}
 <!-- Sidebar -->
 <aside class="sidebar">
   <div class="sidebar-header">
-    <img src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" alt="" class="logo-img" width="32" height="32">
+    <img src="https://antigravity.google/assets/image/brand/antigravity-icon__full-color.png" alt="" class="logo-img" width="28" height="28">
     <div class="brand">
       <h1>Antigravity</h1>
-      <span>Proxy Dashboard</span>
+      <span>Proxy</span>
     </div>
   </div>
   <nav class="nav">
@@ -452,6 +57,10 @@ tbody tr:hover{background:var(--surface2);}
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
       <span>Sessions</span>
     </div>
+    <div class="nav-item" data-tab="model-options">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Model Options</span>
+    </div>
   </nav>
   <div class="sidebar-footer">
     <div class="proxy-status-indicator online" id="statusDot"></div>
@@ -461,7 +70,7 @@ tbody tr:hover{background:var(--surface2);}
     </div>
   </div>
   <div class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
     <span>Collapse</span>
   </div>
 </aside>
@@ -473,15 +82,15 @@ tbody tr:hover{background:var(--surface2);}
       <h2 id="pageTitle">Dashboard</h2>
       <span class="subtitle" id="pageSubtitle">Overview &amp; stats</span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div class="search-wrap" style="width:200px;position:relative">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="globalSearch" placeholder="Search all (/)..." onkeydown="if(event.key==='Enter')searchAll()" style="width:100%;padding:6px 10px 6px 28px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--font);outline:none">
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="search-wrap" style="width:180px;position:relative">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text3);pointer-events:none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="globalSearch" placeholder="Search (/)..." onkeydown="if(event.key==='Enter')searchAll()" style="width:100%;padding:5px 8px 5px 26px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-family:var(--font);outline:none">
       </div>
     </div>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm" onclick="reloadAll()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Refresh
       </button>
     </div>
@@ -494,7 +103,7 @@ tbody tr:hover{background:var(--surface2);}
       <div class="stat-grid" id="statsGrid">
         <div class="stat-card">
           <div class="icon-wrap purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
           <div class="s-label">Requests</div>
           <div class="s-value" id="statRequests">0</div>
@@ -502,15 +111,31 @@ tbody tr:hover{background:var(--surface2);}
         </div>
         <div class="stat-card">
           <div class="icon-wrap green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
           <div class="s-label">Tokens</div>
           <div class="s-value" id="statTokens">0</div>
-          <div class="s-sub">prompt + output</div>
+          <div class="s-sub" id="statTokensSub" style="font-size:10px;color:var(--text3)">prompt + output</div>
+        </div>
+        <div class="stat-card" style="grid-column:span 1">
+          <div class="icon-wrap" style="background:rgba(96,165,250,0.1);color:var(--blue)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <div class="s-label">Prompt Tokens</div>
+          <div class="s-value" id="statPromptTokens" style="font-size:20px">0</div>
+          <div class="s-sub">input to model</div>
+        </div>
+        <div class="stat-card" style="grid-column:span 1">
+          <div class="icon-wrap" style="background:var(--accentDim);color:var(--accent)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="s-label">Output Tokens</div>
+          <div class="s-value" id="statOutputTokens" style="font-size:20px">0</div>
+          <div class="s-sub">generated by model</div>
         </div>
         <div class="stat-card">
           <div class="icon-wrap yellow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           </div>
           <div class="s-label">Tool Calls</div>
           <div class="s-value" id="statToolCalls">0</div>
@@ -518,7 +143,7 @@ tbody tr:hover{background:var(--surface2);}
         </div>
         <div class="stat-card">
           <div class="icon-wrap red">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
           <div class="s-label">Errors</div>
           <div class="s-value" id="statErrors">0</div>
@@ -555,7 +180,7 @@ tbody tr:hover{background:var(--surface2);}
       <div class="filter-bar">
         <div class="search-wrap" style="max-width:160px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <input type="date" id="reqDate" onchange="renderRequests()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="date" id="reqDate" onchange="renderRequests()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
         <div class="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -601,6 +226,19 @@ tbody tr:hover{background:var(--surface2);}
             <select id="cfgLogLevel"><option value="debug">Debug</option><option value="info" selected>Info</option><option value="warn">Warn</option><option value="error">Error</option></select>
             <div class="hint">Verbosity of proxy log output</div>
           </div>
+          <div class="form-group">
+            <label>Inline Context Mode</label>
+            <select id="cfgContextStripMode">
+              <option value="lite">Lite (recommended) — compressed context, ~66% fewer tokens than full context</option>
+              <option value="strip">Strip — removes skills/plugins/identity, injects compact agent-context.md reference</option>
+              <option value="passthrough">Passthrough — sends full Antigravity context to the model unchanged</option>
+            </select>
+            <div class="hint">
+              <strong>Lite:</strong> uses compressed agent-context-lite.md with same behavior, ~3,500 tokens vs ~10,000.
+              <strong>Strip:</strong> removes bulk context, injects full agent-context.md (~10,000 tokens).
+              <strong>Passthrough:</strong> forwards everything Antigravity sends (~28,000 tokens).
+            </div>
+          </div>
         </div>
       </div>
 
@@ -639,6 +277,16 @@ tbody tr:hover{background:var(--surface2);}
           <label><span style="display:inline-block;width:14px;height:14px;mask-image:url(https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg);-webkit-mask-image:url(https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg);mask-size:contain;-webkit-mask-size:contain;background:#48e;vertical-align:middle;margin-right:6px"></span>Google API Key <span id="googleKeyStatus" style="font-size:11px;color:var(--text3);font-weight:400">—</span></label>
           <input type="password" autocomplete="new-password" id="cfgGoogleKey" placeholder="AIza...">
           <div class="hint">From <span style="color:var(--accent2)">aistudio.google.com/apikey</span></div>
+        </div>
+        <div class="form-group">
+          <label><img src="https://opencode.ai/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px" onerror="this.style.display='none'">OpenCode Zen API Key <span id="zenKeyStatus" style="font-size:11px;color:var(--text3);font-weight:400">—</span></label>
+          <input type="password" autocomplete="new-password" id="cfgZenKey" placeholder="sk-...">
+          <div class="hint">From <span style="color:var(--accent2)">opencode.ai/auth</span> — curated gateway: Claude, GPT, Gemini, Grok, Kimi, GLM in one key</div>
+        </div>
+        <div class="form-group">
+          <label><img src="https://opencode.ai/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;border-radius:2px" onerror="this.style.display='none'">OpenCode Go API Key <span id="goKeyStatus" style="font-size:11px;color:var(--text3);font-weight:400">—</span></label>
+          <input type="password" autocomplete="new-password" id="cfgGoKey" placeholder="sk-opencode-go-...">
+          <div class="hint">From <span style="color:var(--accent2)">opencode.ai/auth</span> — paid tier ($10/mo): DeepSeek, Qwen, MiniMax, GLM, Kimi, MiMo</div>
         </div>
       </form></div>
 
@@ -727,7 +375,7 @@ tbody tr:hover{background:var(--surface2);}
         </div>
         <div class="form-group">
           <label>Blocked Content Patterns</label>
-          <textarea id="cfgBlockPatterns" rows="2" placeholder="regex pattern per line" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;resize:vertical"></textarea>
+          <textarea id="cfgBlockPatterns" rows="2" placeholder="regex pattern per line" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;resize:vertical"></textarea>
           <div class="hint">Regular expressions (one per line). Matches against request content. Example: <code style="background:var(--surface3);padding:1px 4px;border-radius:3px">ignore.*instructions</code></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:4px">
@@ -760,8 +408,8 @@ tbody tr:hover{background:var(--surface2);}
         </h3>
         <form autocomplete="off" novalidate onsubmit="saveAuth();return false" style="display:contents">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <input type="text" id="authUsername" placeholder="Username" autocomplete="off" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
-            <input type="password" id="authPassword" placeholder="Password" autocomplete="new-password" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
+            <input type="text" id="authUsername" placeholder="Username" autocomplete="off" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
+            <input type="password" id="authPassword" placeholder="Password" autocomplete="new-password" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;outline:none;min-width:160px;font-family:var(--mono)">
             <button class="btn btn-sm btn-primary" id="authSaveBtn">Save</button>
             <button class="btn btn-sm" id="authDisableBtn" onclick="disableAuth()" type="button" style="color:var(--red)">Disable Auth</button>
           </div>
@@ -790,7 +438,7 @@ tbody tr:hover{background:var(--surface2);}
         </h3>
         <form autocomplete="off" novalidate onsubmit="saveWebhook();return false" style="display:contents">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <input type="url" id="webhookUrlInput" placeholder="https://hooks.example.com/webhook" autocomplete="off" style="flex:1;min-width:250px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;outline:none;font-family:var(--mono)">
+            <input type="url" id="webhookUrlInput" placeholder="https://hooks.example.com/webhook" autocomplete="off" style="flex:1;min-width:250px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none;font-family:var(--mono)">
             <button class="btn btn-sm btn-primary" id="webhookSaveBtn">Save</button>
             <button class="btn btn-sm" id="webhookClearBtn" onclick="clearWebhook()" type="button" style="color:var(--text3)">Clear</button>
             <button class="btn btn-sm" id="webhookTestBtn" onclick="testWebhook()" type="button">Test Webhook</button>
@@ -810,26 +458,78 @@ tbody tr:hover{background:var(--surface2);}
 
     <!-- Models -->
     <section class="section" id="sec-models">
-      <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
         <div>
-          <p style="font-size:13px;color:var(--text2)">Map model IDs to resolved provider models.</p>
-          <p style="font-size:12px;color:var(--text3);margin-top:2px">Changes saved to <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">models.json</code></p>
+          <p style="font-size:14px;color:var(--text);font-weight:600;margin-bottom:4px">Model Routing Configuration</p>
+          <p style="font-size:12px;color:var(--text3)">Configure how requests are routed to providers. Changes saved to <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">models.json</code></p>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm" onclick="addModelRow()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Model
-          </button>
-          <button class="btn btn-sm btn-primary" onclick="saveModels()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="mode-toggle" id="routingModeToggle">
+            <button class="mode-toggle-btn active" data-mode="priority-chain" onclick="setRoutingMode('priority-chain')">Priority Chain</button>
+            <button class="mode-toggle-btn" data-mode="per-model-per-provider" onclick="setRoutingMode('per-model-per-provider')">Per-Model Providers</button>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="saveModelConfig()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
             Save
           </button>
         </div>
       </div>
-      <div class="table-wrap">
-        <table><thead><tr><th style="width:30%">Model ID</th><th style="width:30%">Resolved Model</th><th style="width:20%">Provider</th><th style="width:20%"></th></tr></thead><tbody id="modelsBody"></tbody></table>
+
+      <!-- Priority chain is managed in the Config tab to avoid sync issues -->
+      <div style="padding:10px 16px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--accent2);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span style="font-size:12px;color:var(--text2);flex:1">Provider priority is configured in the <strong>Config</strong> tab. All models follow that global priority chain in Priority Chain mode.</span>
+        <button class="btn btn-sm" onclick="switchTab('config')">Go to Config</button>
       </div>
-      <p style="font-size:11px;color:var(--text3);margin-top:8px">Leave empty to delete rows. Set Provider to override per-provider. Empty Provider = default for all providers.</p>
+
+      <!-- Model Cards -->
+      <div class="model-cards-grid" id="modelCardsGrid"></div>
+
+      <!-- Separator -->
+      <div style="margin:24px 0;border-top:1px solid var(--border2)"></div>
+
+      <!-- Default Model Card -->
+      <div style="padding:16px;background:var(--surface);border:1px solid var(--accent);border-radius:12px;overflow:visible">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:var(--accent2)"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <div>
+            <h3 style="font-size:14px;font-weight:600;color:var(--text);margin:0">Default Model</h3>
+            <p style="font-size:11px;color:var(--text3);margin:0">Handles ALL unknown model requests from Antigravity (e.g. gemini-2.5-flash, gemini-pro-agent, title generation)</p>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:140px 1fr;gap:12px;align-items:end">
+          <div class="model-card-field" style="margin-bottom:0">
+            <label>Provider</label>
+            <div id="defaultProviderSelect" style="position:relative"></div>
+          </div>
+          <div class="model-card-field" style="margin-bottom:0">
+            <label>Model</label>
+            <div id="defaultModelSelect" style="position:relative"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom Model Mapping -->
+      <div style="margin-top:16px;padding:14px 16px;background:var(--surface);border:1px dashed var(--border2);border-radius:10px;overflow:visible">
+        <p style="font-size:13px;color:var(--text);margin-bottom:4px;font-weight:600">Add Custom Model Mapping</p>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:12px">Map any model name Antigravity sends to a specific provider + model. Overrides the default model for that specific name.</p>
+        <div style="display:grid;grid-template-columns:1fr 140px 1fr auto;gap:8px;align-items:end">
+          <div class="model-card-field" style="margin-bottom:0">
+            <label>Model Name (sent by Antigravity)</label>
+            <input id="customModelAlias" type="text" placeholder="e.g. gemini-2.5-flash" style="width:100%;padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--mono);outline:none">
+          </div>
+          <div class="model-card-field" style="margin-bottom:0">
+            <label>Provider</label>
+            <div id="customModelProvider" style="position:relative"></div>
+          </div>
+          <div class="model-card-field" style="margin-bottom:0">
+            <label>Resolved Model</label>
+            <div id="customModelResolved" style="position:relative"></div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="addCustomModelMapping()" style="margin-bottom:0;height:36px">+ Add</button>
+        </div>
+        <div id="customModelMappingsList" style="margin-top:12px"></div>
+      </div>
     </section>
 
     <!-- Browse -->
@@ -839,7 +539,7 @@ tbody tr:hover{background:var(--surface2);}
       </div>
       <form onsubmit="browseFetch(false);return false" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <div id="browseProviderSelect" style="width:160px"></div>
-        <input type="password" autocomplete="new-password" id="browseApiKey" placeholder="API key (optional)" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;outline:none;width:200px;font-family:var(--mono)">
+        <input type="password" autocomplete="new-password" id="browseApiKey" placeholder="API key (optional)" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none;width:200px;font-family:var(--mono)">
         <button class="btn btn-sm" id="browseFetchBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Fetch</button>
         <button class="btn btn-sm btn-ghost" id="browseRefreshBtn" type="button" onclick="browseFetch(true)" data-tooltip="Force-refresh from provider, bypass cache" title="Force-refresh from provider (bypass 10-min cache)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Refresh</button>
         <span id="browseFetchStatus" style="font-size:11px;color:var(--text3)"></span>
@@ -847,7 +547,7 @@ tbody tr:hover{background:var(--surface2);}
       <div id="browseResultsPanel" style="display:none">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" style="width:14px;height:14px;flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="browseSearch" placeholder="Search models..." oninput="renderBrowseModels()" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+          <input id="browseSearch" placeholder="Search models..." oninput="renderBrowseModels()" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
           <span id="browseResultCount" style="font-size:12px;color:var(--text3);white-space:nowrap">0 models</span>
         </div>
         <div id="browseModelList" style="max-height:400px;overflow-y:auto;border:1px solid var(--border2);border-radius:8px;padding:4px"></div>
@@ -869,7 +569,7 @@ tbody tr:hover{background:var(--surface2);}
       <div class="filter-bar" style="flex-wrap:wrap;margin-bottom:16px">
         <div class="search-wrap" style="max-width:200px;position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <input type="date" id="costDate" onchange="loadCostData()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="date" id="costDate" onchange="loadCostData()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
         <button class="btn btn-sm" id="costTodayBtn" onclick="setCostToday()" style="padding:6px 12px">Today</button>
         <button class="btn btn-sm btn-ghost" id="costAllBtn" onclick="setCostAll()" style="padding:6px 12px">All time</button>
@@ -996,13 +696,13 @@ tbody tr:hover{background:var(--surface2);}
       <div class="filter-bar" style="flex-wrap:wrap">
         <div class="search-wrap" style="max-width:200px;position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <input type="date" id="historyDate" onchange="loadRequestsByDate()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="date" id="historyDate" onchange="loadRequestsByDate()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
         <span class="count" id="historyCount">Select a date</span>
         <span style="flex:1"></span>
         <div class="search-wrap" style="max-width:180px;position:relative">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="historySearch" placeholder="Search by model/provider..." oninput="filterHistory()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--font);outline:none">
+          <input type="text" id="historySearch" placeholder="Search by model/provider..." oninput="filterHistory()" style="width:100%;padding:7px 10px 7px 32px;border-radius:8px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--font);outline:none">
         </div>
       </div>
       <div id="historyDateList" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px"></div>
@@ -1022,16 +722,72 @@ tbody tr:hover{background:var(--surface2);}
       <div class="pagination" id="historyPagination" style="display:none;margin-top:12px"></div>
     </section>
 
+    <!-- Model Options (Reasoning Effort) -->
+    <section class="section" id="sec-model-options">
+      <div style="margin-bottom:20px">
+        <p style="font-size:13px;color:var(--text2)">Per-model inference options. The proxy auto-detects models that support <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">reasoning_effort</code> (DeepSeek R-series, NVIDIA stepfun, OpenAI o-series, etc.) and lets you pin a level for each.</p>
+        <p style="font-size:12px;color:var(--text3);margin-top:4px">Settings are applied to every request that resolves to that model name. Saved to <code style="background:var(--surface2);padding:1px 5px;border-radius:3px">reasoning-effort.json</code></p>
+      </div>
+
+      <div class="form-section" style="margin-bottom:16px">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Reasoning Effort
+          <span style="flex:1"></span>
+          <button class="btn btn-sm btn-ghost" onclick="loadReasoningEffort()">↻ Refresh</button>
+        </h3>
+
+        <div id="reAutoDetected" style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Auto-detected from your model map</div>
+          <div id="reAutoList" style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:12px;color:var(--text3);padding:8px">Loading...</div>
+          </div>
+        </div>
+
+        <div id="reManual" style="margin-bottom:12px">
+          <div style="font-size:12px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Manual overrides (any model)</div>
+          <div id="reManualList" style="display:flex;flex-direction:column;gap:6px"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <input id="reManualModel" placeholder="model name, e.g. deepseek/deepseek-r1" style="flex:1;max-width:320px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#111115;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+            <select id="reManualEffort" style="padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#111115;color:var(--text);font-size:12px;outline:none">
+              <option value="low">low</option>
+              <option value="medium" selected>medium</option>
+              <option value="high">high</option>
+              <option value="max">max</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="reAddManual()">Add</button>
+          </div>
+        </div>
+
+        <div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text3);line-height:1.6">
+          <strong style="color:var(--text2)">Effort levels:</strong>
+          <span style="margin-left:8px"><strong style="color:var(--text)">default</strong> — let the model decide (no parameter sent)</span> ·
+          <strong style="color:var(--text)">low</strong> — minimal thinking, fastest ·
+          <strong style="color:var(--text)">medium</strong> — balanced ·
+          <strong style="color:var(--text)">high</strong> — deeper reasoning ·
+          <strong style="color:var(--text)">max</strong> — maximum thinking budget (slowest, most capable)
+        </div>
+      </div>
+    </section>
+
     <!-- Sessions -->
     <section class="section" id="sec-sessions">
       <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <div>
-          <p style="font-size:13px;color:var(--text2)">Session log files with DB-backed request counts. <strong>Select 2</strong> to compare side-by-side. Click a session to expand its requests.</p>
+          <p style="font-size:14px;color:var(--text);font-weight:600;margin-bottom:4px">Session Logs</p>
+          <p style="font-size:12px;color:var(--text3)">DB-backed session files with request counts. Select sessions to compare or view details.</p>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-sm btn-primary" id="sessCompareBtn" onclick="sessCompare()" style="display:none">Compare Selected</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="sessSelectedCount" style="font-size:12px;color:var(--text3);display:none">0 selected</span>
+          <button class="btn btn-sm btn-primary" id="sessCompareBtn" onclick="sessCompare()" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+            Compare
+          </button>
           <button class="btn btn-sm btn-ghost" onclick="sessClearCompare()" style="display:none" id="sessClearBtn">Clear</button>
-          <button class="btn btn-sm" onclick="loadSessions()">↻ Refresh</button>
+          <button class="btn btn-sm" onclick="loadSessions()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
         </div>
       </div>
       <div id="sessionsContent">
@@ -1052,11 +808,15 @@ tbody tr:hover{background:var(--surface2);}
 const API = '';
 let eventSource = null;
 const logBuf = [];
-const pages = {dashboard:'Overview & stats',requests:'Request history',config:'Settings & credentials',models:'Model mappings',browse:'Browse & add models',cost:'Cost tracking',log:'Real-time proxy log',history:'Browse by date',sessions:'Session compare'};
+const pages = {dashboard:'Overview & stats',requests:'Request history',config:'Settings & credentials',models:'Model mappings',browse:'Browse & add models',cost:'Cost tracking',log:'Real-time proxy log',history:'Browse by date',sessions:'Session compare','model-options':'Model inference options'};
 const openDetails = new Set(); // tracks open detail rows by request.id
 const PER_PAGE = 25;
 
 // Navigation
+function switchTab(tab) {
+  const navItem = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+  if (navItem) navItem.click();
+}
 document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1072,7 +832,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
 
 function refreshTab(tab) {
   if (tab === 'requests') renderRequests();
-  else if (tab === 'models') loadModels();
+  else if (tab === 'models') { loadModelConfig(); }
   else if (tab === 'browse') { if (_browseProvider && window._fetchedModels[_browseProvider]) { document.getElementById('browseResultsPanel').style.display = 'block'; renderBrowseModels(); } }
   else if (tab === 'cost') loadCostData();
   else if (tab === 'dashboard') { reloadAll(); }
@@ -1080,6 +840,7 @@ function refreshTab(tab) {
   else if (tab === 'history') { loadHistoryDates(); }
   else if (tab === 'sessions') { loadSessions(); }
   else if (tab === 'log') { scrollLogToBottom(); }
+  else if (tab === 'model-options') { loadReasoningEffort(); }
 }
 
 // Refresh button
@@ -1111,6 +872,9 @@ async function reloadAll() {
     const s = await api('GET', '/api/status');
     document.getElementById('statRequests').textContent = s.stats.totalRequests;
     document.getElementById('statTokens').textContent = s.stats.totalTokens.toLocaleString();
+    document.getElementById('statPromptTokens').textContent = (s.stats.prompt_tokens||0).toLocaleString();
+    document.getElementById('statOutputTokens').textContent = (s.stats.output_tokens||0).toLocaleString();
+    document.getElementById('statTokensSub').textContent = `${(s.stats.prompt_tokens||0).toLocaleString()} in · ${(s.stats.output_tokens||0).toLocaleString()} out`;
     document.getElementById('statToolCalls').textContent = s.stats.totalToolCalls;
     document.getElementById('statErrors').textContent = s.stats.errors;
     document.getElementById('reqBadge').textContent = s.stats.totalRequests;
@@ -1143,6 +907,9 @@ async function reloadAll() {
     if (whEl) whEl.value = whUrl;
     const whDisplay = document.getElementById('webhookUrlDisplay');
     if (whDisplay) { whDisplay.textContent = whUrl || 'Not configured'; whDisplay.style.color = whUrl ? 'var(--text)' : 'var(--text3)'; }
+    // Context strip mode
+    const csmEl = document.getElementById('cfgContextStripMode');
+    if (csmEl) csmEl.value = s.contextStripMode || 'strip';
     // Auth status
     updateAuthStatus(s);
     document.getElementById('nvKeyStatus').textContent = s.env.NVIDIA_API_KEY ? '✓ configured' : '○ not set';
@@ -1151,6 +918,8 @@ async function reloadAll() {
     document.getElementById('groqKeyStatus').textContent = s.env.GROQ_API_KEY ? '✓ configured' : '○ not set';
     document.getElementById('anthKeyStatus').textContent = s.env.ANTHROPIC_API_KEY ? '✓ configured' : '○ not set';
     document.getElementById('googleKeyStatus').textContent = s.env.GOOGLE_API_KEY ? '✓ configured' : '○ not set';
+    document.getElementById('zenKeyStatus').textContent = s.env.OPENCODE_API_KEY ? '✓ configured' : '○ not set';
+    document.getElementById('goKeyStatus').textContent = s.env.OPENCODE_GO_API_KEY ? '✓ configured' : '○ not set';
   } catch (e) {}
   loadLocalProviders();
 }
@@ -1399,7 +1168,7 @@ function renderHistoryTable() {
         ${renderFailoverTimeline(r.failover_events ? (typeof r.failover_events==='string' ? safeJsonParse(r.failover_events) : r.failover_events) : null)}
         <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-sm" id="replay-${rid}" onclick="replayRequest('${rid}')">↻ Replay</button>
-          <select id="rmodel-${rid}" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:var(--mono);outline:none;max-width:200px">
+          <select id="rmodel-${rid}" style="padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:#111115;color:var(--text);font-size:11px;font-family:var(--mono);outline:none;max-width:200px">
             <option value="${esc(r.model||'')}">${esc(r.model||'')} (original)</option>
             ${_allModelNames.filter(m => m !== r.model).map(m => '<option value="'+esc(m)+'">'+esc(m)+'</option>').join('')}
           </select>
@@ -1442,10 +1211,14 @@ const PROVIDER_META = {
   groq:       { label: 'Groq',       color: '#e80', desc: 'Groq LPU inference', logo: 'https://www.groq.com/favicon.svg' },
   anthropic:  { label: 'Anthropic',  color: '#e48', desc: 'Claude models API', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/anthropic.svg', logoMask: true },
   google:     { label: 'Google',     color: '#48e', desc: 'Gemini models API', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg', logoMask: true },
+  zen:        { label: 'Zen',        color: '#0af', desc: 'OpenCode Zen gateway', logo: 'https://opencode.ai/favicon.ico' },
+  'opencode-go': { label: 'OpenCode Go', color: '#0c8', desc: 'OpenCode Go ($10/mo)', logo: 'https://opencode.ai/favicon.ico' },
   ollama:     { label: 'Ollama',     color: '#888', desc: 'Local: localhost:11434', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/ollama.svg', logoMask: true },
   vllm:       { label: 'vLLM',       color: '#888', desc: 'Local: localhost:8000', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/vllm.svg', logoMask: true },
   lmstudio:   { label: 'LM Studio',  color: '#888', desc: 'Local: localhost:1234', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/lmstudio.svg', logoMask: true },
 };
+
+const ALL_PROVIDERS = Object.keys(PROVIDER_META);
 
 function logoHtml(meta, size) {
   if (!meta || !meta.logo) return '';
@@ -1545,6 +1318,8 @@ async function saveConfig() {
     GROQ_API_KEY: document.getElementById('cfgGroqKey').value.trim(),
     ANTHROPIC_API_KEY: document.getElementById('cfgAnthropicKey').value.trim(),
     GOOGLE_API_KEY: document.getElementById('cfgGoogleKey').value.trim(),
+    OPENCODE_API_KEY: document.getElementById('cfgZenKey').value.trim(),
+    OPENCODE_GO_API_KEY: document.getElementById('cfgGoKey').value.trim(),
     PROXY_PORT: document.getElementById('cfgProxyPort').value,
     API_PORT: document.getElementById('cfgApiPort').value,
     LOG_LEVEL: document.getElementById('cfgLogLevel').value,
@@ -1553,6 +1328,7 @@ async function saveConfig() {
     RATE_LIMIT_GLOBAL: document.getElementById('cfgRateGlobal').value,
     RATE_LIMIT_PROVIDER: document.getElementById('cfgRateProvider').value,
     RATE_LIMIT_WINDOW_MS: document.getElementById('cfgRateWindow').value,
+    CONTEXT_STRIP_MODE: document.getElementById('cfgContextStripMode').value,
   };
   deleteEmpty(u);
   try { const r = await api('POST','/api/config',u); if (r.ok) { toast('Config saved and loaded'); reloadAll(); } else toast('Save failed: '+r.error, true); }
@@ -1673,6 +1449,7 @@ const PROVIDER_OPTIONS = [
   { value: 'groq', label: 'Groq', logo: PROVIDER_META.groq.logo },
   { value: 'anthropic', label: 'Anthropic', logo: PROVIDER_META.anthropic.logo },
   { value: 'google', label: 'Google', logo: PROVIDER_META.google.logo },
+  { value: 'zen', label: 'Zen', logo: PROVIDER_META.zen.logo },
   { value: 'ollama', label: 'Ollama', logo: PROVIDER_META.ollama.logo },
   { value: 'vllm', label: 'vLLM', logo: PROVIDER_META.vllm.logo },
   { value: 'lmstudio', label: 'LM Studio', logo: PROVIDER_META.lmstudio.logo },
@@ -1800,139 +1577,573 @@ async function testWebhook() {
   setTimeout(() => { result.textContent = ''; }, 5000);
 }
 
-async function loadModels() {
-  try {
-    const m = await api('GET','/api/models');
-    _allModelNames = [];
-    const tb = document.getElementById('modelsBody'); tb.innerHTML = '';
-    const providerModels = m._provider_models || {};
-    for (const [k, v] of Object.entries(m)) {
-      if (k === '_provider_models') continue;
-      _allModelNames.push(k);
-      addRow(k, v, '');
-    }
-    for (const [model, providers] of Object.entries(providerModels)) {
-      _allModelNames.push(model);
-      for (const [prov, resolved] of Object.entries(providers)) {
-        addRow(model, resolved, prov);
-      }
-    }
-    _allModelNames = [...new Set(_allModelNames)];
-    // Prime resolver dropdowns with cached provider models
-    primeModelCache();
-  } catch (e) {}
-}
-function addModelRow() { addRow('','',''); }
+let _modelConfig = null; // full models.json data
+let _routingMode = 'priority-chain';
 
-// ---- Resolver Select Widget ----
-function createResolverSelect(models, value, onChange, providerMeta) {
+async function loadModelConfig() {
+  try {
+    _modelConfig = await api('GET', '/api/models');
+    _routingMode = _modelConfig._routing_mode || 'priority-chain';
+    // Update mode toggle UI
+    document.querySelectorAll('#routingModeToggle .mode-toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === _routingMode);
+    });
+    const pcs = document.getElementById('priorityChainSection');
+    if (pcs) pcs.style.display = _routingMode === 'priority-chain' ? 'block' : 'none';
+  } catch (e) { console.error('[modelConfig] Failed to load models:', e); }
+  try { renderPriorityChain(); } catch (e) { console.error('[modelConfig] renderPriorityChain failed:', e); }
+  try { renderModelCards(); } catch (e) { console.error('[modelConfig] renderModelCards failed:', e); }
+  try { renderUtilityModels(); } catch (e) { console.error('[modelConfig] renderUtilityModels failed:', e); }
+  try { initCustomModelMapping(); renderCustomModelMappings(); } catch (e) {}
+}
+
+function setRoutingMode(mode) {
+  _routingMode = mode;
+  document.querySelectorAll('#routingModeToggle .mode-toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+}
+
+function renderPriorityChain() {
+  const container = document.getElementById('providerPriorityList');
+  if (!container) return;
+  const priority = _modelConfig?._global_provider_priority || [];
+  const providers = _modelConfig?.providers || [];
+  renderProviderPriority(priority, providers);
+}
+
+const MODEL_GROUPS = [
+  { alias: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash', category: 'Google Gemini', color: '#4285f4', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg', logoMask: true, variants: ['gemini-3.5-flash-medium', 'gemini-3.5-flash-low', 'gemini-3.5-flash-high'], variantLabels: ['Medium', 'Low', 'High'] },
+  { alias: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', category: 'Google Gemini', color: '#4285f4', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/googlegemini.svg', logoMask: true, variants: ['gemini-3.1-pro-low', 'gemini-3.1-pro-high'], variantLabels: ['Low', 'High'] },
+  { alias: 'claude-sonnet-4-6-thinking', label: 'Claude Sonnet 4.6', category: 'Anthropic', color: '#d97757', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/anthropic.svg', logoMask: true, variants: [], variantLabels: [] },
+  { alias: 'claude-opus-4-6-thinking', label: 'Claude Opus 4.6', category: 'Anthropic', color: '#d97757', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/anthropic.svg', logoMask: true, variants: [], variantLabels: [] },
+  { alias: 'gpt-oss-120b-medium', label: 'GPT-OSS 120B', category: 'OpenAI', color: '#10a37f', logo: 'https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/openai.svg', logoMask: true, variants: [], variantLabels: [] },
+];
+
+function renderModelCards() {
+  const grid = document.getElementById('modelCardsGrid');
+  if (!grid) return;
+  const pm = _modelConfig?._provider_models || {};
+
+  grid.innerHTML = MODEL_GROUPS.map(group => {
+    const perProvider = pm[group.alias] || {};
+    const firstProvider = Object.keys(perProvider)[0] || '';
+    const firstModel = perProvider[firstProvider] || '';
+
+    let variantsHtml = '';
+    if (group.variants.length > 0) {
+      variantsHtml = `<div class="model-card-variants">
+        <div class="variant-label">Variants</div>
+        ${group.variants.map((v, vi) => {
+          const vPerProvider = pm[v] || {};
+          const vProvider = Object.keys(vPerProvider)[0] || firstProvider || '';
+          const vModel = vPerProvider[vProvider] || '';
+          return `<div class="variant-row">
+            <span class="variant-name">${group.variantLabels[vi]}</span>
+            <div style="flex:1;display:flex;gap:6px;align-items:center;min-width:0">
+              <div id="prov_${v}" style="flex-shrink:0;min-width:90px"></div>
+              <div id="model_${v}" style="flex:1;min-width:0"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    const logoHtml = group.logo
+      ? (group.logoMask
+        ? `<span style="display:inline-block;width:28px;height:28px;mask-image:url(${group.logo});-webkit-mask-image:url(${group.logo});mask-size:contain;-webkit-mask-size:contain;background:${group.color};flex-shrink:0"></span>`
+        : `<img src="${group.logo}" style="width:28px;height:28px;border-radius:6px;flex-shrink:0" onerror="this.style.display='none'">`)
+      : `<div class="model-card-icon" style="background:${group.color}18;color:${group.color}">${group.icon || ''}</div>`;
+
+    return `<div class="model-card" data-alias="${esc(group.alias)}">
+      <div class="model-card-header">
+        ${logoHtml}
+        <div class="model-card-name">${esc(group.label)}</div>
+        <div class="model-card-badge" style="background:${group.color}14;color:${group.color}">${esc(group.category)}</div>
+      </div>
+      <div class="model-card-body">
+        <div class="model-card-field">
+          <label>Provider</label>
+          <div id="prov_${group.alias}" style="min-width:0"></div>
+        </div>
+        <div class="model-card-field">
+          <label>Model Name <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--text3)">(click to select, dbl-click to edit)</span></label>
+          <div id="model_${group.alias}" style="min-width:0"></div>
+        </div>
+        ${variantsHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Now attach Browse-style resolver selects to each DOM container
+  MODEL_GROUPS.forEach(group => {
+    const perProvider = pm[group.alias] || {};
+    const primaryProv = Object.keys(perProvider)[0] || '';
+    const primaryModel = perProvider[primaryProv] || '';
+
+    attachModelField('model_' + group.alias, group.alias, primaryProv, primaryModel);
+    attachProviderField('prov_' + group.alias, group.alias, primaryProv, (newProv) => {
+      const pm2 = _modelConfig._provider_models || {};
+      if (!pm2[group.alias]) pm2[group.alias] = {};
+      const oldModel = pm2[group.alias][primaryProv] || '';
+      pm2[group.alias] = {};
+      pm2[group.alias][newProv] = oldModel || '';
+      _modelConfig._provider_models = pm2;
+      attachModelField('model_' + group.alias, group.alias, newProv, oldModel || '');
+      renderUtilityModels();
+    });
+
+    group.variants.forEach(v => {
+      const vPerProvider = pm[v] || {};
+      const vProv = Object.keys(vPerProvider)[0] || primaryProv || '';
+      const vModel = vPerProvider[vProv] || '';
+      attachModelField('model_' + v, v, vProv, vModel);
+      attachProviderField('prov_' + v, v, vProv, (newProv) => {
+        const pm2 = _modelConfig._provider_models || {};
+        if (!pm2[v]) pm2[v] = {};
+        const oldModel = pm2[v][vProv] || '';
+        pm2[v] = {};
+        pm2[v][newProv] = oldModel || '';
+        _modelConfig._provider_models = pm2;
+        attachModelField('model_' + v, v, newProv, oldModel || '');
+        renderUtilityModels();
+      });
+    });
+  });
+}
+
+function attachProviderField(containerId, alias, selected, onChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const meta = PROVIDER_META[selected] || PROVIDER_META[ALL_PROVIDERS[0]];
   const wrapper = document.createElement('div');
-  wrapper.className = 'rsel-wrap';
+  wrapper.style.cssText = 'position:relative;width:100%';
+  const sel = document.createElement('select');
+  sel.style.cssText = 'position:absolute;opacity:0;width:0;height:0;pointer-events:none';
+  ALL_PROVIDERS.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = PROVIDER_META[p]?.label || p;
+    if (p === selected) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  wrapper.appendChild(sel);
+  const trigger = document.createElement('div');
+  trigger.className = 'psel-trigger';
+  trigger.style.cssText = 'display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;cursor:pointer;outline:none;user-select:none;min-height:34px';
+  trigger.innerHTML = (meta ? logoHtml(meta, 14) : '') + '<span style="flex:1">' + (meta?.label || selected) + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3);flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>';
+  wrapper.appendChild(trigger);
+  const menu = document.createElement('div');
+  menu.className = 'psel-menu';
+  menu.style.cssText = 'position:fixed;background:#1a1a20;border:1px solid var(--border2);border-radius:6px;z-index:9999;display:none;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
+  ALL_PROVIDERS.forEach(p => {
+    const pm2 = PROVIDER_META[p] || { label: p, color: '#888' };
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:7px 10px;cursor:pointer;font-size:12px;color:var(--text);transition:background 0.1s';
+    item.innerHTML = (pm2.logo ? '<img src="' + pm2.logo + '" style="width:14px;height:14px;' + (pm2.logoMask ? 'filter:brightness(0) invert(1);opacity:0.6' : '') + '" onerror="this.style.display=\'none\'">' : '<span style="width:14px;height:14px;border-radius:50%;background:' + pm2.color + ';flex-shrink:0;display:inline-block"></span>') + '<span>' + pm2.label + '</span>';
+    item.onmouseenter = () => item.style.background = 'var(--surface3)';
+    item.onmouseleave = () => item.style.background = '';
+    item.onclick = (e) => {
+      e.stopPropagation();
+      const nm = PROVIDER_META[p] || { label: p };
+      trigger.innerHTML = (nm.logo ? '<img src="' + nm.logo + '" style="width:14px;height:14px;' + (nm.logoMask ? 'filter:brightness(0) invert(1);opacity:0.6' : '') + '" onerror="this.style.display=\'none\'">' : '<span style="width:14px;height:14px;border-radius:50%;background:' + (nm.color||'#888') + ';flex-shrink:0;display:inline-block"></span>') + '<span style="flex:1">' + nm.label + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3);flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>';
+      menu.style.display = 'none'; sel.value = p;
+      if (onChange) onChange(p);
+    };
+    menu.appendChild(item);
+  });
+  document.body.appendChild(menu);
+  menu._trigger = trigger;
+  trigger.onclick = (e) => {
+    e.stopPropagation();
+    if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+    var r = trigger.getBoundingClientRect();
+    var spaceBelow = window.innerHeight - r.bottom;
+    var menuH = Math.min(220, ALL_PROVIDERS.length * 36 + 8);
+    if (spaceBelow < menuH && r.top > menuH) {
+      menu.style.top = (r.top - menuH - 2) + 'px';
+    } else {
+      menu.style.top = (r.bottom + 2) + 'px';
+    }
+    menu.style.left = r.left + 'px';
+    menu.style.width = r.width + 'px';
+    menu.style.display = 'block';
+  };
+  container.appendChild(wrapper);
+}
+
+function attachModelField(containerId, alias, provider, modelName) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:relative;width:100%';
   const hi = document.createElement('input');
-  hi.type = 'hidden'; hi.className = 'rsel-value'; hi.value = value || '';
+  hi.type = 'hidden'; hi.className = 'rsel-value'; hi.value = modelName || '';
   wrapper.appendChild(hi);
   const trigger = document.createElement('div');
   trigger.className = 'rsel-trigger';
-  const triggerLogo = providerMeta ? logoHtml(providerMeta, 14) : '';
-  trigger.style.cssText = 'display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:13px;font-family:var(--mono);cursor:pointer;outline:none;user-select:none;min-height:34px';
-  trigger.innerHTML = '<span class="rsel-logo" style="display:inline-flex;width:14px;height:14px;flex-shrink:0">'+triggerLogo+'</span><span class="rsel-text" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'+(value?'var(--text)':'var(--text3)')+'">'+esc(value||'Select model...')+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
+  trigger.style.cssText = 'display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:13px;font-family:var(--mono);cursor:pointer;outline:none;user-select:none;min-height:34px';
+  const pm = PROVIDER_META[provider] || PROVIDER_META.openrouter;
+  trigger.innerHTML = '<span style="display:inline-flex;width:14px;height:14px;flex-shrink:0">' + logoHtml(pm, 14) + '</span><span class="rsel-text" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:' + (modelName ? 'var(--text)' : 'var(--text3)') + '">' + esc(modelName || 'Select model...') + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;flex-shrink:0;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
   wrapper.appendChild(trigger);
   const menu = document.createElement('div');
-  menu.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;z-index:200;display:none;max-height:280px;overflow:hidden;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
+  menu.className = 'rsel-menu';
+  menu.style.cssText = 'position:fixed;background:#1a1a20;border:1px solid var(--border2);border-radius:6px;z-index:9999;display:none;max-height:280px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
   const search = document.createElement('input');
-  search.placeholder = 'Search models...';
-  search.style.cssText = 'width:100%;padding:6px 8px;border:none;border-bottom:1px solid var(--border2);background:transparent;color:var(--text);font-size:12px;font-family:var(--mono);outline:none';
+  search.placeholder = 'Search ' + (PROVIDER_META[provider]?.label || provider) + ' models...';
+  search.style.cssText = 'width:100%;padding:7px 10px;border:none;border-bottom:1px solid var(--border2);background:transparent;color:var(--text);font-size:11px;font-family:var(--mono);outline:none';
   menu.appendChild(search);
   const list = document.createElement('div');
   list.style.cssText = 'max-height:220px;overflow-y:auto';
   menu.appendChild(list);
   function renderList(filter) {
-    const filtered = filter ? models.filter(m => m.toLowerCase().includes(filter.toLowerCase())) : models;
+    const cached = window._toggledModels[provider] || window._fetchedModels[provider] || [];
+    const filtered = filter ? cached.filter(m => m.toLowerCase().includes(filter.toLowerCase())) : cached.slice(0, 80);
     list.innerHTML = filtered.map(m => {
-      const sel = m === hi.value;
-      const itemLogo = providerMeta ? logoHtml(providerMeta, 12) : '<span style="width:12px;display:inline-block"></span>';
-      return '<div class="rsel-item" data-model="'+esc(m)+'" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;font-size:12px;font-family:var(--mono);color:'+(sel?'var(--accent)':'var(--text2)')+';transition:background 0.12s'+(sel?';background:var(--accentDim)':'')+'">' +
-        '<span style="display:inline-flex;width:12px;height:12px;flex-shrink:0">'+itemLogo+'</span>' +
-        (sel?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>':'<span style="width:10px;flex-shrink:0"></span>') +
-        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis">'+esc(m)+'</span>' +
-      '</div>';
+      const sel2 = m === hi.value;
+      return '<div class="rsel-item" data-model="' + esc(m) + '" style="display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;font-size:12px;font-family:var(--mono);color:' + (sel2 ? 'var(--accent2)' : 'var(--text2)') + ';transition:background 0.1s' + (sel2 ? ';background:var(--accentDim)' : '') + '">' +
+        (sel2 ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>' : '<span style="width:10px;flex-shrink:0"></span>') +
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis">' + esc(m) + '</span></div>';
     }).join('');
     list.querySelectorAll('.rsel-item').forEach(el => {
       el.onclick = function(e) {
         e.stopPropagation();
-        const m = this.dataset.model;
-        hi.value = m;
+        const m2 = this.dataset.model;
+        hi.value = m2;
         const t = trigger.querySelector('.rsel-text');
-        t.textContent = m;
+        t.textContent = m2;
         t.style.color = 'var(--text)';
         menu.style.display = 'none';
-        if (onChange) onChange(m);
+        setModelName(alias, provider, m2);
       };
     });
   }
   renderList('');
-  wrapper.appendChild(menu);
+  document.body.appendChild(menu);
+  menu._trigger = trigger;
   trigger.onclick = function(e) {
     e.stopPropagation();
-    const open = menu.style.display === 'block';
-    menu.style.display = open ? 'none' : 'block';
-    if (!open) { search.value = ''; renderList(''); setTimeout(() => search.focus(), 50); }
+    if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+    var r = trigger.getBoundingClientRect();
+    var spaceBelow = window.innerHeight - r.bottom;
+    var cached = window._toggledModels?.[provider] || window._fetchedModels?.[provider] || [];
+    var menuH = Math.min(280, cached.length * 32 + 40);
+    if (spaceBelow < menuH && r.top > menuH) {
+      menu.style.top = (r.top - menuH - 2) + 'px';
+    } else {
+      menu.style.top = (r.bottom + 2) + 'px';
+    }
+    menu.style.left = r.left + 'px';
+    menu.style.width = r.width + 'px';
+    menu.style.display = 'block';
+    search.value = ''; renderList(''); setTimeout(() => search.focus(), 50);
   };
   search.oninput = function() { renderList(this.value); };
   search.onkeydown = function(e) {
-    if (e.key === 'Escape') { menu.style.display = 'none'; }
+    if (e.key === 'Escape') menu.style.display = 'none';
     else if (e.key === 'Enter') { const fi = list.querySelector('.rsel-item'); if (fi) fi.click(); }
   };
-  wrapper.updateModels = function(newModels, newProviderMeta) {
-    models = newModels || [];
-    if (newProviderMeta) {
-      const trigLogo = trigger.querySelector('.rsel-logo');
-      if (trigLogo) trigLogo.innerHTML = logoHtml(newProviderMeta, 14);
-      providerMeta = newProviderMeta;
-    }
+  wrapper.updateProvider = function(newProvider) {
+    const nm = PROVIDER_META[newProvider] || PROVIDER_META.openrouter;
+    const logoEl = trigger.querySelector('span[style*="inline-flex"]');
+    if (logoEl) logoEl.innerHTML = logoHtml(nm, 14);
+    search.placeholder = 'Search ' + (nm.label || newProvider) + ' models...';
     renderList(search.value);
   };
-  return wrapper;
+  container.appendChild(wrapper);
 }
 
-// ---- Provider Select ----
+function createModelNameFieldHtml(alias, provider, modelName, context) {
+  const display = modelName || 'Not configured';
+  const color = modelName ? 'var(--text)' : 'var(--text3)';
+  return `<div class="model-name-field" data-alias="${esc(alias)}" data-context="${context}">
+    <div class="model-name-display" onclick="onModelNameClick(event, this)" ondblclick="onModelNameDblClick(event, this)">
+      <span class="model-name-text" style="color:${color}">${esc(display)}</span>
+      <span class="model-name-edit-icon">✎</span>
+    </div>
+    <input class="model-name-edit" type="text" style="display:none" value="${esc(modelName)}"
+      onblur="onModelNameEditBlur(this)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.dataset.cancel='1';this.blur()}">
+  </div>`;
+}
+
+function onProviderChange(sel, alias, context) {
+  const provider = sel.value;
+  const pm = _modelConfig._provider_models || {};
+  if (!pm[alias]) pm[alias] = {};
+  const oldProvider = Object.keys(pm[alias])[0];
+  if (oldProvider && oldProvider !== provider) {
+    const oldModel = pm[alias][oldProvider];
+    delete pm[alias][oldProvider];
+    pm[alias][provider] = oldModel || '';
+  }
+  _modelConfig._provider_models = pm;
+  // Re-render to update model name display
+  renderModelCards();
+  renderUtilityModels();
+}
+
+function onModelNameClick(e, display) {
+  e.stopPropagation();
+  const field = display.closest('.model-name-field');
+  const alias = field.dataset.alias;
+  const editInput = field.querySelector('.model-name-edit');
+  const provider = field.closest('.model-card')?.querySelector('select')?.value || 'openrouter';
+  const models = window._toggledModels[provider] || window._fetchedModels[provider] || [];
+
+  if (models.length === 0) {
+    // Try lazy fetch
+    api('GET', '/api/provider-models?provider=' + encodeURIComponent(provider)).then(r => {
+      if (r && r.models && r.models.length) {
+        window._fetchedModels[provider] = r.models;
+        window._toggledModels[provider] = [...r.models];
+        showModelDropdown(field, alias, provider, r.models);
+      } else {
+        toast('No cached models for ' + provider + ' — use Browse tab to fetch', true);
+      }
+    }).catch(() => {});
+    return;
+  }
+  showModelDropdown(field, alias, provider, models);
+}
+
+function showModelDropdown(field, alias, provider, models) {
+  const existing = document.querySelector('._dropdown-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = '_dropdown-overlay';
+  const search = document.createElement('input');
+  search.className = '_dropdown-search';
+  search.placeholder = 'Search ' + (PROVIDER_META[provider]?.label || provider) + ' models...';
+  overlay.appendChild(search);
+  const list = document.createElement('div');
+  list.className = '_dropdown-list';
+  overlay.appendChild(list);
+
+  const currentVal = _modelConfig._provider_models?.[alias]?.[provider] || '';
+
+  function renderItems(filter) {
+    const filtered = filter ? models.filter(m => m.toLowerCase().includes(filter.toLowerCase())) : models.slice(0, 80);
+    list.innerHTML = filtered.map(m => {
+      const sel = m === currentVal;
+      return `<div class="_dropdown-item${sel ? ' selected' : ''}" data-model="${esc(m)}">${sel ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>' : '<span style="width:10px;flex-shrink:0"></span>'}<span>${esc(m)}</span></div>`;
+    }).join('');
+    list.querySelectorAll('._dropdown-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const model = el.dataset.model;
+        setModelName(alias, provider, model);
+        overlay.remove();
+      });
+    });
+  }
+
+  renderItems('');
+  search.addEventListener('input', () => renderItems(search.value));
+  search.addEventListener('keydown', e => {
+    if (e.key === 'Escape') overlay.remove();
+    if (e.key === 'Enter') { const first = list.querySelector('._dropdown-item'); if (first) first.dispatchEvent(new MouseEvent('mousedown')); }
+  });
+
+  document.body.appendChild(overlay);
+  const rect = field.querySelector('.model-name-display').getBoundingClientRect();
+  overlay.style.left = rect.left + 'px';
+  overlay.style.top = (rect.bottom + 4) + 'px';
+  if (rect.left + 380 > window.innerWidth) overlay.style.left = (window.innerWidth - 390) + 'px';
+  setTimeout(() => search.focus(), 30);
+
+  const close = (e) => { if (!overlay.contains(e.target)) { overlay.remove(); document.removeEventListener('mousedown', close); } };
+  setTimeout(() => document.addEventListener('mousedown', close), 100);
+}
+
+function onModelNameDblClick(e, display) {
+  e.stopPropagation();
+  const field = display.closest('.model-name-field');
+  const displayEl = field.querySelector('.model-name-display');
+  const editInput = field.querySelector('.model-name-edit');
+  displayEl.style.display = 'none';
+  editInput.style.display = 'block';
+  editInput.focus();
+  editInput.select();
+}
+
+function onModelNameEditBlur(input) {
+  if (input.dataset.cancel) { input.dataset.cancel = ''; input.style.display = 'none'; input.closest('.model-name-field').querySelector('.model-name-display').style.display = ''; return; }
+  const field = input.closest('.model-name-field');
+  const alias = field.dataset.alias;
+  const display = field.querySelector('.model-name-display');
+  const text = field.querySelector('.model-name-text');
+  const model = input.value.trim();
+  const provider = field.closest('.model-card')?.querySelector('select')?.value || 'openrouter';
+  setModelName(alias, provider, model);
+  input.style.display = 'none';
+  display.style.display = '';
+}
+
+function setModelName(alias, provider, model) {
+  const pm = _modelConfig._provider_models || {};
+  if (!pm[alias]) pm[alias] = {};
+  if (provider) pm[alias][provider] = model;
+  _modelConfig._provider_models = pm;
+  if (alias === 'default') {
+    _modelConfig._default_model = model;
+    _modelConfig._default_provider = provider;
+  }
+  renderModelCards();
+  renderUtilityModels();
+}
+
+function renderUtilityModels() {
+  const defaultProvContainer = document.getElementById('defaultProviderSelect');
+  if (defaultProvContainer) {
+    const currentDefault = _modelConfig?._default_provider || (_modelConfig?._global_provider_priority?.[0]) || 'zen';
+    attachProviderField('defaultProviderSelect', 'default', currentDefault, function(val) {
+      _modelConfig._default_provider = val;
+      attachModelField('defaultModelSelect', 'default', val, _modelConfig._default_model || '');
+    });
+    attachModelField('defaultModelSelect', 'default', currentDefault, _modelConfig._default_model || '');
+  }
+}
+
+
+
+function onUtilityModelChange() {}
+
+async function saveModelConfig() {
+  if (!_modelConfig) { toast('No config loaded', true); return; }
+  _modelConfig._routing_mode = _routingMode;
+  var dp = _modelConfig._default_provider || '';
+  var dm = _modelConfig._default_model || _modelConfig._provider_models?.default?.[dp] || '';
+  if (dp && !dm) { dp = ''; }
+  if (dm && !dp) { dm = ''; }
+  _modelConfig._default_provider = dp;
+  _modelConfig._default_model = dm;
+  try {
+    var r = await api('POST', '/api/models', _modelConfig);
+    if (r.ok) { toast('Model config saved'); loadModelConfig(); }
+    else toast('Save failed: ' + (r.error || 'unknown'), true);
+  } catch (e) { toast('Save failed: ' + e.message, true); }
+}
+
+// Legacy compatibility — browseAddSelected still calls addRow()
+function addRow(k, v, provider) {
+  if (!_modelConfig) _modelConfig = {};
+  if (provider) {
+    if (!_modelConfig._provider_models) _modelConfig._provider_models = {};
+    if (!_modelConfig._provider_models[k]) _modelConfig._provider_models[k] = {};
+    _modelConfig._provider_models[k][provider] = v;
+  } else {
+    _modelConfig[k] = v;
+  }
+  renderModelCards();
+  renderUtilityModels();
+}
+function addModelRow() {}
+
+function initCustomModelMapping() {
+  const provContainer = document.getElementById('customModelProvider');
+  if (provContainer) {
+    attachProviderField('customModelProvider', 'custom', 'openrouter', function(val) {
+      attachModelField('customModelResolved', 'custom_' + val, val, '');
+    });
+    attachModelField('customModelResolved', 'custom_openrouter', 'openrouter', '');
+  }
+}
+
+function populateCustomModelDropdown(provider) {
+  attachModelField('customModelResolved', 'custom_' + provider, provider, '');
+}
+
+function addCustomModelMapping() {
+  var alias = document.getElementById('customModelAlias')?.value.trim();
+  var providerWrap = document.getElementById('customModelProvider')?.querySelector('.psel-wrap');
+  var provider = providerWrap?.querySelector('select')?.value || 'openrouter';
+  var modelWrap = document.getElementById('customModelResolved');
+  var hi = modelWrap?.querySelector('.rsel-value');
+  var modelText = hi ? hi.value : '';
+  if (!alias) { toast('Model name is required', true); return; }
+  if (!modelText) { toast('Select a model', true); return; }
+  var pm = _modelConfig._provider_models || {};
+  if (!pm[alias]) pm[alias] = {};
+  pm[alias][provider] = modelText;
+  _modelConfig._provider_models = pm;
+  document.getElementById('customModelAlias').value = '';
+  renderCustomModelMappings();
+  renderModelCards();
+  toast('Mapped "' + alias + '" to ' + provider + '/' + modelText);
+}
+
+function removeCustomModelMapping(alias) {
+  const pm = _modelConfig._provider_models || {};
+  delete pm[alias];
+  _modelConfig._provider_models = pm;
+  renderCustomModelMappings();
+  renderModelCards();
+}
+
+function renderCustomModelMappings() {
+  const container = document.getElementById('customModelMappingsList');
+  if (!container) return;
+  const pm = _modelConfig?._provider_models || {};
+  const customModels = Object.keys(pm).filter(k => !MODEL_GROUPS.some(g => g.alias === k || g.variants.includes(k)));
+  if (customModels.length === 0) { container.innerHTML = '<p style="font-size:11px;color:var(--text3)">No custom mappings yet.</p>'; return; }
+  container.innerHTML = customModels.map(alias => {
+    const providers = pm[alias];
+    const entries = Object.entries(providers);
+    return entries.map(function(entry) {
+      const prov = entry[0];
+      const model = entry[1];
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;margin-bottom:4px">' +
+        '<span style="font-size:12px;font-family:var(--mono);color:var(--text);flex:1">' + esc(alias) + '</span>' +
+        '<span style="font-size:11px;color:var(--text3)">→</span>' +
+        '<span style="font-size:11px;color:var(--accent2);font-family:var(--mono)">' + esc(prov) + '</span>' +
+        '<span style="font-size:11px;color:var(--text3)">/</span>' +
+        '<span style="font-size:11px;color:var(--text2);font-family:var(--mono);flex:1">' + esc(model) + '</span>' +
+        '<button class="btn btn-sm btn-danger" onclick="removeCustomModelMapping(\'' + esc(alias) + '\')" style="padding:2px 8px;font-size:11px">✕</button>' +
+      '</div>';
+    }).join('');
+  }).join('');
+}
+
+// ---- Provider Select (DOM element creator — used by browseInit) ----
 function createProviderSelect(selected, onChange) {
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:relative;width:100%';
   wrapper.className = 'psel-wrap';
   const sel = document.createElement('select');
   sel.style.cssText = 'position:absolute;opacity:0;width:0;height:0;pointer-events:none';
-  PROVIDER_OPTIONS.forEach(o => {
+  ALL_PROVIDERS.forEach(p => {
     const opt = document.createElement('option');
-    opt.value = o.value; opt.textContent = o.label;
-    if (o.value === selected) opt.selected = true;
+    opt.value = p;
+    const meta = PROVIDER_META[p] || { label: p };
+    opt.textContent = meta.label;
+    if (p === selected) opt.selected = true;
     sel.appendChild(opt);
   });
   wrapper.appendChild(sel);
-  const cur = PROVIDER_OPTIONS.find(o => o.value === selected) || PROVIDER_OPTIONS[0];
+  const meta = PROVIDER_META[selected] || PROVIDER_META[ALL_PROVIDERS[0]];
   const trigger = document.createElement('div');
   trigger.className = 'psel-trigger';
-  trigger.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;outline:none;user-select:none';
-  const curMeta = cur.value ? PROVIDER_META[cur.value] : null;
-  trigger.innerHTML = (curMeta?logoHtml(curMeta,14):'')+'<span style="flex:1">'+cur.label+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
+  trigger.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;cursor:pointer;outline:none;user-select:none';
+  trigger.innerHTML = (meta ? logoHtml(meta, 14) : '') + '<span style="flex:1">' + (meta?.label || selected) + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
   wrapper.appendChild(trigger);
   const menu = document.createElement('div');
   menu.className = 'psel-menu';
-  menu.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;z-index:200;display:none;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
-  PROVIDER_OPTIONS.forEach(o => {
+  menu.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:#1a1a20;border:1px solid var(--border2);border-radius:6px;z-index:200;display:none;max-height:220px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.4)';
+  ALL_PROVIDERS.forEach(p => {
+    const pm = PROVIDER_META[p] || { label: p, color: '#888' };
     const item = document.createElement('div');
     item.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:12px;color:var(--text);transition:background 0.12s';
-    const om = o.value ? PROVIDER_META[o.value] : null;
-    item.innerHTML = (om?logoHtml(om,14):'<span style="width:14px;display:inline-block"></span>')+'<span>'+o.label+'</span>';
-    item.onmouseenter = () => item.style.background = 'var(--surface1)';
+    item.innerHTML = (pm.logo ? logoHtml(pm, 14) : '<span style="width:14px;display:inline-block"></span>') + '<span>' + pm.label + '</span>';
+    item.onmouseenter = () => item.style.background = 'var(--surface3)';
     item.onmouseleave = () => item.style.background = '';
     item.onclick = (e) => {
       e.stopPropagation();
-      const nm = o.value ? PROVIDER_META[o.value] : null;
-      trigger.innerHTML = (nm?logoHtml(nm,14):'')+'<span style="flex:1">'+o.label+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
-      menu.style.display = 'none'; sel.value = o.value;
-      if (onChange) onChange(o.value);
+      const nm = PROVIDER_META[p] || { label: p };
+      trigger.innerHTML = (nm.logo ? logoHtml(nm, 14) : '') + '<span style="flex:1">' + nm.label + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;color:var(--text3)"><polyline points="6 9 12 15 18 9"/></svg>';
+      menu.style.display = 'none'; sel.value = p;
+      if (onChange) onChange(p);
     };
     menu.appendChild(item);
   });
@@ -1941,79 +2152,92 @@ function createProviderSelect(selected, onChange) {
   return wrapper;
 }
 
-// ---- Row Builder ----
-function addRow(k, v, provider) {
-  const tr = document.createElement('tr');
-  const td1 = document.createElement('td');
-  const km = k.toLowerCase();
-  const kMeta = km.startsWith('claude') ? PROVIDER_META.anthropic : km.startsWith('gemini') ? PROVIDER_META.google : km.startsWith('gpt') ? PROVIDER_META.openai : null;
-  const kLogo = kMeta ? logoHtml(kMeta, 14) : '';
-  td1.innerHTML = '<div style="display:flex;align-items:center;gap:4px">'+kLogo+'<input class="model-input" value="'+esc(k)+'" placeholder="e.g. gemini-2.5-pro"></div>';
+// ---- Reasoning Effort ----
+let _reData = null;
 
-  const pMeta = provider ? PROVIDER_META[provider] : null;
-  const resolverLogo = pMeta ? logoHtml(pMeta, 14) : '';
-  const toggled = provider ? (window._toggledModels[provider] || []) : [];
-
-  const td2 = document.createElement('td');
-  td2.innerHTML = '<div style="display:flex;align-items:center;gap:4px"><span class="rlw" style="display:inline-flex;width:14px;height:14px;flex-shrink:0">'+resolverLogo+'</span></div>';
-  const rsel = createResolverSelect(toggled, v, function(val) {}, pMeta);
-  td2.firstChild.appendChild(rsel);
-
-  const td3 = document.createElement('td');
-  const psel = createProviderSelect(provider || '', function(val) {
-    const rl = td2.querySelector('.rlw');
-    const nm = val ? PROVIDER_META[val] : null;
-    if (rl) rl.innerHTML = nm ? logoHtml(nm, 14) : '';
-    const cached = window._toggledModels[val] || [];
-    if (rsel.updateModels) rsel.updateModels(cached, nm);
-    if (cached.length === 0 && val) {
-      // Try to lazy-fetch from cache endpoint
-      api('GET', '/api/provider-models?provider=' + encodeURIComponent(val)).then(r => {
-        if (r && r.models && r.models.length) {
-          window._fetchedModels[val] = r.models;
-          window._toggledModels[val] = [...r.models];
-          if (rsel.updateModels) rsel.updateModels(r.models, nm);
-        }
-      }).catch(() => {});
-    }
-  });
-  td3.appendChild(psel);
-
-  // For empty rows, also try a lazy-fetch in case the provider was just selected
-  if (provider && (window._toggledModels[provider] || []).length === 0) {
-    api('GET', '/api/provider-models?provider=' + encodeURIComponent(provider)).then(r => {
-      if (r && r.models && r.models.length) {
-        window._fetchedModels[provider] = r.models;
-        window._toggledModels[provider] = [...r.models];
-        if (rsel.updateModels) rsel.updateModels(r.models, pMeta);
-      }
-    }).catch(() => {});
+async function loadReasoningEffort() {
+  try {
+    _reData = await api('GET', '/api/reasoning-effort');
+    renderReasoningEffort();
+  } catch (e) {
+    const el = document.getElementById('reAutoList');
+    if (el) el.innerHTML = '<div style="font-size:12px;color:var(--red)">Failed to load: ' + esc(e.message) + '</div>';
   }
-
-  const td4 = document.createElement('td');
-  td4.innerHTML = '<button class="btn-icon" onclick="this.closest(\'tr\').remove()" data-tooltip="Remove">✕</button>';
-  tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3); tr.appendChild(td4);
-  document.getElementById('modelsBody').appendChild(tr);
 }
 
-async function saveModels() {
-  const flat = {};
-  const providerModels = {};
-  document.querySelectorAll('#modelsBody tr').forEach(tr => {
-    const inp = tr.querySelectorAll('input');
-    const prov = tr.querySelector('.psel-wrap select');
-    const rv = tr.querySelector('.rsel-value');
-    const k = inp[0].value.trim(), v = rv ? rv.value.trim() : '';
-    const p = prov ? prov.value : '';
-    if (!k || !v) return;
-    if (p) {
-      if (!providerModels[k]) providerModels[k] = {};
-      providerModels[k][p] = v;
-    } else { flat[k] = v; }
-  });
-  const payload = { ...flat };
-  if (Object.keys(providerModels).length > 0) payload._provider_models = providerModels;
-  try { const r = await api('POST','/api/models',payload); if (r.ok) { toast('Models saved and loaded'); loadModels(); } else toast('Save failed', true); } catch (e) { toast('Save failed: '+e.message, true); }
+function renderReasoningEffort() {
+  if (!_reData) return;
+  const autoList = document.getElementById('reAutoList');
+  const manualList = document.getElementById('reManualList');
+  if (!autoList || !manualList) return;
+
+  const EFFORT_OPTIONS = ['default','low','medium','high','max'];
+  const allConfigured = _reData.config?.models || {};
+
+  // Auto-detected
+  if (_reData.autoDetected && _reData.autoDetected.length > 0) {
+    autoList.innerHTML = _reData.autoDetected.map(item => {
+      const current = allConfigured[item.model] || 'default';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:500;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.model)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">${esc(item.label || '')}</div>
+        </div>
+        <select onchange="reSetEffort('${esc(item.model)}',this.value)"
+          style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none;cursor:pointer">
+          ${EFFORT_OPTIONS.map(e => `<option value="${e}" ${e === current ? 'selected' : ''}>${e}</option>`).join('')}
+        </select>
+        <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${current === 'default' ? 'var(--surface3)' : 'var(--accentDim)'};color:${current === 'default' ? 'var(--text3)' : 'var(--accent2)'}">
+          ${current === 'default' ? 'not set' : '✓ ' + current}
+        </span>
+      </div>`;
+    }).join('');
+  } else {
+    autoList.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:12px;background:var(--surface2);border-radius:8px">
+      No reasoning models detected in your current model map. Add DeepSeek R-series, NVIDIA stepfun, or OpenAI o-series models to the Models tab first.
+    </div>`;
+  }
+
+  // Manual overrides (anything in config that's not auto-detected)
+  const autoModels = new Set((_reData.autoDetected || []).map(x => x.model));
+  const manualEntries = Object.entries(allConfigured).filter(([m]) => !autoModels.has(m));
+  if (manualEntries.length === 0) {
+    manualList.innerHTML = '<div style="font-size:12px;color:var(--text3)">None.</div>';
+  } else {
+    manualList.innerHTML = manualEntries.map(([model, effort]) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px">
+        <span style="flex:1;font-size:12px;font-family:var(--mono)">${esc(model)}</span>
+        <select onchange="reSetEffort('${esc(model)}',this.value)"
+          style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;outline:none">
+          ${EFFORT_OPTIONS.map(e => `<option value="${e}" ${e === effort ? 'selected' : ''}>${e}</option>`).join('')}
+        </select>
+        <button onclick="reRemove('${esc(model)}')" title="Remove"
+          style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 6px"
+          onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--text3)'">✕</button>
+      </div>`).join('');
+  }
+}
+
+async function reSetEffort(model, effort) {
+  try {
+    const r = await api('POST', '/api/reasoning-effort', { model, effort });
+    if (r.ok) {
+      toast('Effort set: ' + model + ' → ' + effort);
+      await loadReasoningEffort();
+    } else toast('Save failed: ' + (r.error || 'unknown'), true);
+  } catch (e) { toast('Error: ' + e.message, true); }
+}
+
+async function reRemove(model) {
+  await reSetEffort(model, 'default');
+}
+
+async function reAddManual() {
+  const model = document.getElementById('reManualModel').value.trim();
+  const effort = document.getElementById('reManualEffort').value;
+  if (!model) { toast('Enter a model name', true); return; }
+  await reSetEffort(model, effort);
+  document.getElementById('reManualModel').value = '';
 }
 
 // ---- Browse Tab ----
@@ -2025,8 +2249,9 @@ function browseInit() {
   const container = document.getElementById('browseProviderSelect');
   if (!container) return;
   container.innerHTML = '';
-  const psel = createProviderSelect('', function(val) { _browseProvider = val; });
+  const psel = createProviderSelect(ALL_PROVIDERS[0], function(val) { _browseProvider = val; });
   container.appendChild(psel);
+  _browseProvider = ALL_PROVIDERS[0];
   primeModelCache();
 }
 
@@ -2056,14 +2281,15 @@ async function browseFetch(force) {
       await api('DELETE', '/api/provider-models/cache?provider=' + encodeURIComponent(provider)).catch(() => {});
     }
     const res = await api('POST', '/api/provider-models', { provider, apiKey, force: !!force });
-    if (res && res.models) {
+    if (res && res.error) {
+      status.textContent = res.error;
+      document.getElementById('browseResultsPanel').style.display = 'none';
+    } else if (res && res.models) {
       window._fetchedModels[provider] = res.models;
       window._toggledModels[provider] = [...res.models];
       document.getElementById('browseResultsPanel').style.display = 'block';
       renderBrowseModels();
       status.textContent = res.models.length + ' models loaded' + (force ? ' (refreshed)' : '');
-    } else if (res && res.error) {
-      status.textContent = 'Failed: ' + res.error;
     } else {
       status.textContent = 'Failed';
     }
@@ -2082,16 +2308,19 @@ function renderBrowseModels() {
   count.textContent = models.length + ' model' + (models.length !== 1 ? 's' : '');
   list.innerHTML = models.map(m => {
     const checked = toggled.includes(m);
-    const existing = Array.from(document.querySelectorAll('#modelsBody tr')).some(tr => {
-      const inp = tr.querySelectorAll('input');
-      const rv = tr.querySelector('.rsel-value');
-      return inp[0]?.value === m || (rv && rv.value === m);
-    });
+    const existing = (() => {
+      const pm = (window._matrixData?._provider_models) || {};
+      const all = new Set(Object.keys(window._matrixData || {}).filter(k => k !== '_provider_models'));
+      for (const providers of Object.values(pm)) {
+        for (const v of Object.values(providers)) { if (v) all.add(String(v)); }
+      }
+      return all;
+    })();
     return '<label style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px;font-family:var(--mono);color:var(--text2);transition:background 0.12s" onmouseenter="this.style.background=\'var(--surface1)\'" onmouseleave="this.style.background=\'\'">' +
       '<input type="checkbox" class="browse-cb" '+(checked?'checked':'')+' data-model="'+esc(m)+'" style="accent-color:var(--accent)">' +
       (logo||'') +
       '<span style="flex:1;overflow:hidden;text-overflow:ellipsis">'+esc(m)+'</span>' +
-      (existing ? '<span style="font-size:10px;color:var(--green);white-space:nowrap">✓ in config</span>' : '') +
+      (existing.has(m) ? '<span style="font-size:10px;color:var(--green);white-space:nowrap">✓ in config</span>' : '') +
     '</label>';
   }).join('');
   list.querySelectorAll('.browse-cb').forEach(cb => {
@@ -2130,18 +2359,28 @@ async function browseAddSelected() {
   if (!provider) return;
   const toggled = window._toggledModels[provider] || [];
   if (toggled.length === 0) { toast('No models selected', true); return; }
-  const existing = new Set(Array.from(document.querySelectorAll('#modelsBody tr')).map(tr => {
-    const inp = tr.querySelectorAll('input');
-    const rv = tr.querySelector('.rsel-value');
-    return inp[0]?.value+'|'+(rv ? rv.value : '');
-  }));
+  // Check what's already in the matrix
+  const existing = new Set();
+  const pm = (window._matrixData?._provider_models) || {};
+  for (const [alias, providers] of Object.entries(pm)) {
+    for (const [p, v] of Object.entries(providers)) {
+      if (p === provider && v) existing.add(alias + '|' + v);
+    }
+  }
   let added = 0;
+  if (!window._matrixData) window._matrixData = {};
+  if (!window._matrixData._provider_models) window._matrixData._provider_models = {};
   toggled.forEach(model => {
-    const key = model+'|'+model;
-    if (!existing.has(key)) { addRow(model, model, provider); existing.add(key); added++; }
+    const key = model + '|' + model;
+    if (!existing.has(key)) {
+      window._matrixData._provider_models[model] = window._matrixData._provider_models[model] || {};
+      window._matrixData._provider_models[model][provider] = model;
+      existing.add(key);
+      added++;
+    }
   });
   if (added === 0) { toast('Models already in config'); return; }
-  toast('Added '+added+' model'+(added!==1?'s':'')+', saving...');
+  toast('Added ' + added + ' model' + (added !== 1 ? 's' : '') + ', saving...');
   await saveModels();
   const modelsTab = document.querySelector('.nav-item[data-tab="models"]');
   if (modelsTab) modelsTab.click();
@@ -2429,7 +2668,7 @@ async function loadPricingConfig() {
 function renderPricingEditor(data) {
   const meta = data['$meta'] || {};
   document.getElementById('pricingAutoFree').checked = meta.autoFree !== false;
-  const providerIds = ['openrouter','nvidia','openai','groq','anthropic','google','ollama','vllm','lmstudio'];
+  const providerIds = ['openrouter','nvidia','openai','groq','anthropic','google','zen','opencode-go','ollama','vllm','lmstudio'];
   let html = '';
   for (const pid of providerIds) {
     const pmeta = PROVIDER_META[pid] || { label: pid, color: '#888' };
@@ -2444,8 +2683,8 @@ function renderPricingEditor(data) {
         <span style="font-size:10px;color:var(--text3);margin-right:4px">Input / 1M</span>
         <span style="font-size:10px;color:var(--text3);margin-right:10px">Output / 1M</span>
         <span style="font-size:11px;color:var(--text3);margin-right:4px">Default</span>
-        <input class="pdef-in" data-provider="${pid}" type="number" step="any" min="0" value="${def.input}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
-        <input class="pdef-out" data-provider="${pid}" type="number" step="any" min="0" value="${def.output}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Default output price per 1M tokens">
+        <input class="pdef-in" data-provider="${pid}" type="number" step="any" min="0" value="${def.input}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
+        <input class="pdef-out" data-provider="${pid}" type="number" step="any" min="0" value="${def.output}" style="width:68px;padding:4px 6px;border-radius:4px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:11px;font-family:var(--mono);outline:none;text-align:right" title="Default output price per 1M tokens">
         <button class="btn btn-sm btn-ghost" onclick="addPricingRow('${pid}')" style="font-size:11px">+ Model</button>
       </div>
       <div id="pe-${pid}">
@@ -2455,9 +2694,9 @@ function renderPricingEditor(data) {
         ${entries.length === 0 ? '<div style="font-size:12px;color:var(--text3);padding:4px 0">No model-specific overrides.</div>' : ''}
         ${entries.map(([model, price], i) => `
           <div class="prow" data-provider="${pid}" data-idx="${i}" style="display:grid;grid-template-columns:1fr 80px 80px 28px;gap:6px;margin-bottom:6px;align-items:center">
-            <input class="pmodel" value="${esc(model)}" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
-            <input class="pinput" type="number" step="any" min="0" value="${price.input}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
-            <input class="poutput" type="number" step="any" min="0" value="${price.output}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Output price per 1M tokens">
+            <input class="pmodel" value="${esc(model)}" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+            <input class="pinput" type="number" step="any" min="0" value="${price.input}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Input price per 1M tokens">
+            <input class="poutput" type="number" step="any" min="0" value="${price.output}" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right" title="Output price per 1M tokens">
             <button class="btn btn-icon" onclick="removePricingRow(this)" style="width:28px;height:28px;padding:0;font-size:14px;color:var(--text3)">✕</button>
           </div>
         `).join('')}
@@ -2483,9 +2722,9 @@ function addPricingRow(provider) {
   div.className = 'prow';
   div.style.cssText = 'display:grid;grid-template-columns:1fr 80px 80px 28px;gap:6px;margin-bottom:6px;align-items:center';
   div.innerHTML = `
-    <input class="pmodel" value="" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
-    <input class="pinput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
-    <input class="poutput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
+    <input class="pmodel" value="" placeholder="model-name" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none">
+    <input class="pinput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
+    <input class="poutput" type="number" step="any" min="0" value="0" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:#1a1a20;color:var(--text);font-size:12px;font-family:var(--mono);outline:none;text-align:right">
     <button class="btn btn-icon" onclick="removePricingRow(this)" style="width:28px;height:28px;padding:0;font-size:14px;color:var(--text3)">✕</button>
   `;
   container.appendChild(div);
@@ -2507,7 +2746,7 @@ function removePricingRow(btn) {
 function collectPricingFromEditor() {
   const data = { '$meta': _pricingData?.['$meta'] || { autoFree: true } };
   data['$meta'].autoFree = document.getElementById('pricingAutoFree').checked;
-  const providerIds = ['openrouter','nvidia','openai','groq','anthropic','google','ollama','vllm','lmstudio'];
+  const providerIds = ['openrouter','nvidia','openai','groq','anthropic','google','zen','opencode-go','ollama','vllm','lmstudio'];
   for (const pid of providerIds) {
     const entries = {};
     const defIn = parseFloat(document.querySelector(`.pdef-in[data-provider="${pid}"]`)?.value) || 0;
@@ -2661,26 +2900,47 @@ async function loadSessions() {
       document.getElementById('sessionsContent').innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg><p>No sessions yet</p><p class="sub">Sessions appear here as requests are made through the proxy.</p></div>';
       return;
     }
-    let html = '<div style="max-height:60vh;overflow-y:auto;border:1px solid var(--border2);border-radius:8px">';
+    let html = '<div style="display:flex;flex-direction:column;gap:12px">';
     for (const d of dates) {
       const sessions = await api('GET', '/api/sessions?date='+encodeURIComponent(d.date));
       if (!sessions || sessions.length === 0) continue;
-      html += `<div style="padding:10px 14px;border-bottom:1px solid var(--border2);background:var(--surface2)"><strong style="font-size:12px">${d.date} (${sessions.length} files)</strong></div>`;
+      html += `<div style="margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:8px 8px 0 0;border:1px solid var(--border2);border-bottom:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--text3)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <strong style="font-size:13px;color:var(--text)">${esc(d.date)}</strong>
+          <span style="font-size:11px;color:var(--text3)">${sessions.length} session${sessions.length>1?'s':''}</span>
+        </div>
+        <div style="border:1px solid var(--border2);border-radius:0 0 8px 8px;overflow:hidden">`;
       for (const s of sessions) {
         const checked = _sessCompare.has(s.file) ? 'checked' : '';
         const reqCount = s.requestCount || 0;
-        html += `<div style="border-bottom:1px solid var(--border2);font-size:12px">
-          <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;transition:background 0.12s" onclick="toggleSessDetail('${esc(s.file)}')" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
-            <input type="checkbox" ${checked} onclick="event.stopPropagation();toggleSessCompare('${esc(s.file)}')" style="accent-color:var(--accent)">
-            <span style="min-width:10px;color:var(--text3);font-size:10px" id="sessArrow-${esc(s.file)}">▶</span>
-            <span style="flex:1;font-weight:${reqCount>0?'600':'400'}">${esc(s.file)}</span>
-            <span style="color:var(--text3);font-size:11px;min-width:80px;text-align:right">${reqCount} req</span>
-            <span style="color:var(--text3);font-size:11px;min-width:70px;text-align:right">${s.duration||'—'}</span>
-            ${s.models && s.models.length ? '<span style="font-size:10px;color:var(--accent2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.models.join(', '))+'</span>' : ''}
+        const models = (s.models || []).slice(0, 3);
+        const moreModels = (s.models || []).length > 3 ? '+' + ((s.models||[]).length - 3) : '';
+        html += `<div style="border-bottom:1px solid var(--border2);${sessions.indexOf(s)===sessions.length-1?'border-bottom:none':''}">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background 0.15s" onclick="toggleSessDetail('${esc(s.file)}')" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
+            <label style="display:flex;align-items:center;cursor:pointer;position:relative" onclick="event.stopPropagation()">
+              <input type="checkbox" ${checked} onchange="toggleSessCompare('${esc(s.file)}')" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer">
+            </label>
+            <span style="min-width:12px;color:var(--text3);font-size:11px;transition:transform 0.2s" id="sessArrow-${esc(s.file)}">▶</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:${reqCount>0?'600':'400'};color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.file)}</div>
+              ${models.length ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">' + models.map(m => '<span style="font-size:10px;padding:2px 6px;background:var(--accentDim);color:var(--accent2);border-radius:4px;font-family:var(--mono)">' + esc(m) + '</span>').join('') + (moreModels ? '<span style="font-size:10px;color:var(--text3)">…</span>' : '') + '</div>' : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+              <div style="text-align:right;min-width:60px">
+                <div style="font-size:13px;font-weight:600;color:${reqCount>0?'var(--text)':'var(--text3)'}">${reqCount}</div>
+                <div style="font-size:10px;color:var(--text3)">requests</div>
+              </div>
+              <div style="text-align:right;min-width:50px">
+                <div style="font-size:12px;color:var(--text2)">${s.duration||'—'}</div>
+                <div style="font-size:10px;color:var(--text3)">duration</div>
+              </div>
+            </div>
           </div>
           <div id="sessDetail-${esc(s.file)}" style="display:none;padding:0 14px 12px 44px;font-size:11px;color:var(--text3)"></div>
         </div>`;
       }
+      html += '</div></div>';
     }
     html += '</div>';
     document.getElementById('sessionsContent').innerHTML = html;
@@ -2719,13 +2979,20 @@ function toggleSessCompare(file) {
   updateSessButtons();
   // Update checkbox visual
   document.querySelectorAll('#sessionsContent input[type=checkbox]').forEach(cb => {
-    cb.checked = _sessCompare.has(cb.getAttribute('onchange')?.match(/'([^']+)'/)?.[1] || '');
+    const onchange = cb.getAttribute('onchange') || '';
+    const match = onchange.match(/'([^']+)'/);
+    if (match) cb.checked = _sessCompare.has(match[1]);
   });
 }
 
 function updateSessButtons() {
   document.getElementById('sessCompareBtn').style.display = _sessCompare.size === 2 ? '' : 'none';
   document.getElementById('sessClearBtn').style.display = _sessCompare.size > 0 ? '' : 'none';
+  const countEl = document.getElementById('sessSelectedCount');
+  if (countEl) {
+    countEl.style.display = _sessCompare.size > 0 ? '' : 'none';
+    countEl.textContent = _sessCompare.size + ' selected';
+  }
 }
 
 function sessClearCompare() { _sessCompare.clear(); updateSessButtons(); loadSessions(); }
@@ -2800,11 +3067,18 @@ async function searchAll() {
 // ---- Init ----
 document.addEventListener('click', function(e) {
   document.querySelectorAll('.psel-menu').forEach(m => { if (!m.closest('.psel-wrap')?.contains(e.target)) m.style.display = 'none'; });
+  document.querySelectorAll('.rsel-menu').forEach(m => { if (m.style.display === 'block' && !m.contains(e.target) && !m._trigger?.contains(e.target)) m.style.display = 'none'; });
+  document.querySelectorAll('._dropdown-overlay').forEach(m => { if (!m.contains(e.target)) m.remove(); });
 });
+document.addEventListener('scroll', function(e) {
+  const target = e.target;
+  document.querySelectorAll('.psel-menu').forEach(m => { if (!m.contains(target)) m.style.display = 'none'; });
+  document.querySelectorAll('.rsel-menu').forEach(m => { if (!m.contains(target)) m.style.display = 'none'; });
+}, true);
 [document.getElementById('reqPagination')].forEach(el => { if (el) el.style.display='none'; });
 document.getElementById('historyDate').value = todayStr();
 initSidebar(); initShortcuts();
-reloadAll(); renderRequests(); loadModels(); connectSSE(); loadHistoryDates(); browseInit();
+reloadAll(); loadModelConfig(); connectSSE(); loadHistoryDates(); browseInit(); loadReasoningEffort();
 api('GET','/api/logs').then(logs => { logs.forEach(e => { logBuf.push(e); appendLog(e, true); }); }).catch(()=>{});
 </script>
 </body>

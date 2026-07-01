@@ -1,7 +1,7 @@
 import type { OpenAIMessage } from '../mapper.js';
 
 export interface StreamChunk {
-  type: 'text' | 'tool-call' | 'error' | 'done' | 'thought' | 'attempt';
+  type: 'text' | 'tool-call' | 'error' | 'done' | 'thought' | 'attempt' | 'session-id';
   content?: string;
   name?: string;
   args?: Record<string, unknown>;
@@ -9,6 +9,7 @@ export interface StreamChunk {
   attempt?: number;
   status?: 'trying' | 'retrying' | 'failover' | 'failed';
   fallback?: boolean;
+  sessionId?: string;
 }
 
 export interface ModelAdapter {
@@ -19,5 +20,6 @@ export interface ModelAdapter {
     tools?: Record<string, unknown>,
     config?: Record<string, unknown>,
     signal?: AbortSignal,
+    system?: string,
   ): AsyncGenerator<StreamChunk>;
 }

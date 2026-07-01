@@ -85,10 +85,17 @@ if (-not $alreadyTrusted) {
 }
 
 # -- Kill old proxy -----------------------------------------------------------
-$oldPid = (netstat -ano | Select-String ':4040 ' | ForEach-Object { ($_ -split '\s+')[-1] }) | Where-Object { $_ -ne '0' } | Select-Object -First 1
-if ($oldPid) {
-  Write-Step "Stopping old proxy (PID $oldPid)"
-  taskkill /F /PID $oldPid 2>$null
+# Use Get-NetTCPConnection (more reliable than netstat parsing).
+# Check BOTH ports: 443 (TLS proxy) AND 4000 (dashboard) so a half-dead
+# instance on either port is caught before we try to bind.
+$oldPids = @(Get-NetTCPConnection -State Listen -LocalPort 4000,443 -ErrorAction SilentlyContinue `
+              | Select-Object -ExpandProperty OwningProcess -Unique `
+              | Where-Object { $_ -ne 0 -and $_ -ne $PID })
+if ($oldPids.Count -gt 0) {
+  Write-Step "Stopping old proxy process(es) (PIDs: $($oldPids -join ', '))"
+  foreach ($p in $oldPids) {
+    taskkill /F /PID $p 2>$null
+  }
   Start-Sleep -Seconds 1
   Write-Ok "Old proxy stopped"
 }
@@ -103,8 +110,21 @@ $logArgs = @("-NoExit", "-Command", "cd '$ProxyDir'; npx tsx src/index.ts 2>&1 |
 $showWindow = Read-Host "  Show proxy window? (Y/n)"
 $windowStyle = if ($showWindow -ne 'n' -and $showWindow -ne 'N') { 'Normal' } else { 'Hidden' }
 
+# Only request UAC elevation if we're not already admin.
+# The old code always used -Verb RunAs, which triggers a SECOND UAC prompt
+# even when the user is already elevated, spawning a separate admin process
+# that loses the original env / cert store state.
+$startArgs = @{
+  FilePath     = 'powershell'
+  WindowStyle  = 'Normal'
+  ArgumentList = $logArgs
+  PassThru     = $true
+}
+if (-not $IsAdmin) {
+  $startArgs['Verb'] = 'RunAs'
+}
 try {
-  $proc = Start-Process powershell -Verb RunAs -WindowStyle $windowStyle -ArgumentList $logArgs -PassThru
+  $proc = Start-Process @startArgs
   Write-Ok "Proxy starting (PID $($proc.Id)) - log: $logFile"
 } catch {
   Write-Err "Failed to start proxy: $_"
@@ -113,47 +133,22 @@ try {
 
 Start-Sleep -Seconds 3
 
-# -- Reset language server connections ----------------------------------------
-Write-Step "Resetting language server connections"
-ipconfig /flushdns | Out-Null
-Write-Ok "DNS cache flushed"
-
-$lsProcs = Get-Process -Name "language_server_windows_x64" -ErrorAction SilentlyContinue
-if ($lsProcs) {
-  $conns = @()
-  foreach ($ls in $lsProcs) {
-    $c = Get-NetTCPConnection -OwningProcess $ls.Id -RemotePort 443 -ErrorAction SilentlyContinue
-    if ($c) { $conns += $c }
-  }
-  if ($conns.Count -gt 0) {
-    Write-Info "  Found $($conns.Count) active connection(s) to Google"
-    $choice = Read-Host "  Toggle network adapter to force reconnect? (Y/n)"
-    if ($choice -ne 'n' -and $choice -ne 'N') {
-      Write-Info "  Briefly toggling network adapter (all network will pause ~5s)..."
-      $adapter = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.HardwareInterface } | Select-Object -First 1
-      if ($adapter) {
-        try {
-          Disable-NetAdapter -Name $adapter.Name -Confirm:$false | Out-Null
-          Start-Sleep -Seconds 2
-          Enable-NetAdapter -Name $adapter.Name -Confirm:$false | Out-Null
-          Write-Ok "Network adapter '$($adapter.Name)' toggled - stale connections dropped"
-          Start-Sleep -Seconds 3
-        } catch {
-          Write-Warn "Could not toggle adapter: $_"
-          Write-Info "  Disconnecting and reconnecting your network will have the same effect"
-        }
-      } else {
-        Write-Warn "No suitable network adapter found"
-        Write-Info "  Manually disable/enable your network adapter, or wait ~3 minutes for connections to expire"
-      }
-    } else {
-      Write-Info "  Skipped. Wait ~3 minutes for connections to expire, or toggle your network adapter manually."
-    }
-  } else {
-    Write-Ok "No active language server connections to Google"
+# -- Open Dashboard in browser ------------------------------------------------
+$portOpen = $false
+for ($i = 0; $i -lt 10; $i++) {
+  $portOpen = ((netstat -ano | Select-String ':4000\s') -ne $null)
+  if ($portOpen) { break }
+  Start-Sleep -Milliseconds 500
+}
+if ($portOpen) {
+  try {
+    Start-Process "http://localhost:4000" | Out-Null
+    Write-Ok "Dashboard opened in your default browser."
+  } catch {
+    Write-Warn "Could not open browser automatically. Visit http://localhost:4000 manually."
   }
 } else {
-  Write-Ok "No language server running"
+  Write-Warn "Dashboard not yet ready. Visit http://localhost:4000 in a few seconds."
 }
 
 # -- Launch Antigravity -------------------------------------------------------
