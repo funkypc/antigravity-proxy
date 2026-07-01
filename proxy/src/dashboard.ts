@@ -9,6 +9,7 @@ import { poolFetch } from './http-pool.js';
 import { requestStore } from './request-store.js';
 import { reloadRouter, streamResponse } from './engine.js';
 import * as db from './db.js';
+import { USER_ENV_PATH } from './cli/utils/paths.js';
 import { getAllPricing, savePricing, reload as reloadPricing } from './pricing.js';
 import { setRateLimitConfig, getRateLimitConfig, getRateLimitStats, resetRateLimits } from './rate-limiter.js';
 import { getBlocklist, saveBlocklist, reload as reloadBlocklist } from './blocklist.js';
@@ -173,8 +174,7 @@ function maskKey(key: string): string {
 function readEnv(): Record<string, string> {
   const result: Record<string, string> = {};
   try {
-    const envPath = path.resolve(__dirname, '..', '.env');
-    const raw = fs.readFileSync(envPath, 'utf-8');
+    const raw = fs.readFileSync(USER_ENV_PATH, 'utf-8');
     for (const line of raw.split('\n')) {
       const m = line.match(/^([A-Z_]+)=(.+)/);
       if (m) result[m[1]] = m[2].trim();
@@ -206,14 +206,13 @@ function readEnv(): Record<string, string> {
 
 function writeEnv(updates: Record<string, string>): boolean {
   try {
-    const envPath = path.resolve(__dirname, '..', '.env');
-    let raw = fs.readFileSync(envPath, 'utf-8');
+    let raw = fs.readFileSync(USER_ENV_PATH, 'utf-8');
     for (const [k, v] of Object.entries(updates)) {
       const re = new RegExp(`^${k}=.*`, 'm');
       if (re.test(raw)) raw = raw.replace(re, `${k}=${v}`);
       else raw += `\n${k}=${v}`;
     }
-    fs.writeFileSync(envPath, raw, 'utf-8');
+    fs.writeFileSync(USER_ENV_PATH, raw, 'utf-8');
     return true;
   } catch { return false; }
 }
